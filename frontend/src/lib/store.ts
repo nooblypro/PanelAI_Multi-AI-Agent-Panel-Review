@@ -10,15 +10,18 @@ interface PipelineState {
   decision: FinalDecision | null;
 
   // Review state
-  reviewStatus: 'idle' | 'running' | 'done';
+  reviewStatus: 'idle' | 'running' | 'done' | 'error';
+  reviewError: string | null;
   agentProgress: Record<string, boolean>; // agentId -> done?
 
   // Debate state
-  debateStatus: 'idle' | 'running' | 'done';
+  debateStatus: 'idle' | 'running' | 'done' | 'error';
+  debateError: string | null;
   revealedTurns: number;
 
   // Verdict state
-  verdictStatus: 'idle' | 'running' | 'done';
+  verdictStatus: 'idle' | 'running' | 'done' | 'error';
+  verdictError: string | null;
 
   // Actions
   setStage: (stage: Stage) => void;
@@ -45,14 +48,17 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   debateTurns: [],
   decision: null,
   reviewStatus: 'idle',
+  reviewError: null,
   agentProgress: {},
   debateStatus: 'idle',
+  debateError: null,
   revealedTurns: 0,
   verdictStatus: 'idle',
+  verdictError: null,
 
   setStage: (stage) => set({ stage }),
 
-  setProfile: (profile) => set({ profile, stage: 'profile' }),
+  setProfile: (profile) => set({ profile, stage: 'profile', reviewError: null, debateError: null, verdictError: null }),
 
   updateProfileName: (name) => {
     const profile = get().profile;
@@ -65,22 +71,32 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
 
     set({
       reviewStatus: 'running',
+      reviewError: null,
       agentProgress: { technical: false, culture: false, hiring_manager: false, skeptic: false },
       opinions: [],
     });
 
-    const opinions = await runIndependentReview(profile, (agentId) => {
-      set((state) => ({
-        agentProgress: { ...state.agentProgress, [agentId]: true }
-      }));
-    });
+    try {
+      const opinions = await runIndependentReview(profile, (agentId) => {
+        set((state) => ({
+          agentProgress: { ...state.agentProgress, [agentId]: true }
+        }));
+      });
 
-    // Finalize
-    set({
-      agentProgress: { technical: true, culture: true, hiring_manager: true, skeptic: true },
-      opinions,
-      reviewStatus: 'done',
-    });
+      // Finalize
+      set({
+        agentProgress: { technical: true, culture: true, hiring_manager: true, skeptic: true },
+        opinions,
+        reviewStatus: 'done',
+        reviewError: null,
+      });
+    } catch (err: any) {
+      console.error('startReview failed:', err);
+      set({
+        reviewStatus: 'error',
+        reviewError: err?.message || 'Failed to complete independent evaluation.',
+      });
+    }
   },
 
   startDebate: async () => {
@@ -88,11 +104,18 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
     const opinions = get().opinions;
     if (!profile || opinions.length === 0) return;
 
-    set({ debateStatus: 'running', debateTurns: [], revealedTurns: 0 });
+    set({ debateStatus: 'running', debateError: null, debateTurns: [], revealedTurns: 0 });
 
-    const turns = await runDebate(profile, opinions);
-
-    set({ debateTurns: turns, debateStatus: 'done' });
+    try {
+      const turns = await runDebate(profile, opinions);
+      set({ debateTurns: turns, debateStatus: 'done', debateError: null });
+    } catch (err: any) {
+      console.error('startDebate failed:', err);
+      set({
+        debateStatus: 'error',
+        debateError: err?.message || 'Failed to generate panel debate.',
+      });
+    }
   },
 
   revealNextTurn: () => {
@@ -109,11 +132,18 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
     const debateTurns = get().debateTurns;
     if (!profile || opinions.length === 0) return;
 
-    set({ verdictStatus: 'running' });
+    set({ verdictStatus: 'running', verdictError: null });
 
-    const decision = await synthesizeDecision(profile, opinions, debateTurns);
-
-    set({ decision, verdictStatus: 'done', stage: 'verdict' });
+    try {
+      const decision = await synthesizeDecision(profile, opinions, debateTurns);
+      set({ decision, verdictStatus: 'done', verdictError: null, stage: 'verdict' });
+    } catch (err: any) {
+      console.error('startVerdict failed:', err);
+      set({
+        verdictStatus: 'error',
+        verdictError: err?.message || 'Failed to synthesize final verdict.',
+      });
+    }
   },
 
   reset: () =>
@@ -124,10 +154,13 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
       debateTurns: [],
       decision: null,
       reviewStatus: 'idle',
+      reviewError: null,
       agentProgress: {},
       debateStatus: 'idle',
+      debateError: null,
       revealedTurns: 0,
       verdictStatus: 'idle',
+      verdictError: null,
     }),
 
   loadFromHistory: (data) =>
@@ -138,9 +171,12 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
       debateTurns: data.debateTurns,
       decision: data.decision,
       reviewStatus: 'done',
+      reviewError: null,
       agentProgress: { technical: true, culture: true, hiring_manager: true, skeptic: true },
       debateStatus: 'done',
+      debateError: null,
       revealedTurns: data.debateTurns.length,
       verdictStatus: 'done',
+      verdictError: null,
     }),
 }));

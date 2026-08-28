@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Lock, Check, Loader2 } from 'lucide-react';
+import { ArrowRight, Lock, Check, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
 import type { AgentId, AgentOpinion } from '../types';
 import { AGENT_ICONS, AGENT_NAMES, AGENT_COLORS } from './AgentAvatar';
@@ -140,12 +140,15 @@ function AgentCard({
 export function IndependentReview() {
   const opinions = usePipelineStore((s) => s.opinions);
   const reviewStatus = usePipelineStore((s) => s.reviewStatus);
+  const reviewError = usePipelineStore((s) => s.reviewError);
   const agentProgress = usePipelineStore((s) => s.agentProgress);
   const setStage = usePipelineStore((s) => s.setStage);
+  const startReview = usePipelineStore((s) => s.startReview);
   const startDebate = usePipelineStore((s) => s.startDebate);
 
-  const allDone = reviewStatus === 'done';
+  const allDone = reviewStatus === 'done' || (opinions.length === 4);
   const running = reviewStatus === 'running';
+  const isError = reviewStatus === 'error';
 
   const handleStartDebate = () => {
     setStage('debate');
@@ -169,6 +172,30 @@ export function IndependentReview() {
         </p>
       </motion.div>
 
+      {/* Error Notice */}
+      {isError && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 rounded-lg bg-danger/10 border border-danger/30 text-danger flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="flex items-center gap-2.5">
+            <AlertCircle size={18} className="flex-shrink-0" />
+            <div>
+              <p className="text-[13px] font-semibold">Evaluation Interrupted</p>
+              <p className="text-[12px] opacity-90">{reviewError || 'A connection issue occurred during agent review.'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => startReview()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-danger text-white text-[12px] font-medium hover:bg-danger/90 transition-colors w-fit"
+          >
+            <RotateCcw size={13} />
+            Retry Review
+          </button>
+        </motion.div>
+      )}
+
       {/* 2x2 grid */}
       <div className="grid sm:grid-cols-2 gap-4 mb-8">
         {AGENT_IDS.map((id, i) => {
@@ -178,7 +205,7 @@ export function IndependentReview() {
               key={id}
               agentId={id}
               opinion={opinion}
-              isDone={agentProgress[id] || false}
+              isDone={agentProgress[id] || Boolean(opinion)}
               allDone={allDone}
               index={i}
             />

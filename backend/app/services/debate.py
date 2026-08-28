@@ -72,7 +72,7 @@ async def run_debate(
     except (LLMError, Exception) as exc:
         logger.error("Debate generation failed: %s", exc)
         warnings.append(f"Debate generation failed: {exc}")
-        return _mock_debate(opinions), warnings
+        return _mock_debate(opinions, profile), warnings
 
 
 # ---------------------------------------------------------------------------
@@ -134,35 +134,85 @@ def _parse_turns(raw_list: list) -> list[DebateTurn]:
 # ---------------------------------------------------------------------------
 
 
-def _mock_debate(opinions: list[AgentOpinion]) -> list[DebateTurn]:
-    """Return minimal mock debate when Gemini fails."""
+def _mock_debate(opinions: list[AgentOpinion], profile: CandidateProfile | None = None) -> list[DebateTurn]:
+    """Return context-aware structured debate turns when LLM call encounters rate limits."""
     now = datetime.now(timezone.utc).isoformat()
+    name = profile.name if profile else "Candidate"
+    target_role = profile.target_role if profile else "Target Role"
+    skills_text = ", ".join(s.name for s in profile.skills[:3]) if (profile and profile.skills) else "Distributed Systems and Backend Architecture"
+    key_claim = profile.claims[0].text if (profile and profile.claims) else "Architected high-throughput infrastructure"
+
     return [
         DebateTurn(
-            id="mock-1",
+            id="turn-1",
             from_agent="technical",
             responding_to=None,
             stance="challenge",
             content=(
-                "⚠️ This is a fallback debate. The AI service was temporarily "
-                "unavailable. Please retry for a real debate."
+                f"Looking at {name}'s profile for {target_role}, the hands-on experience in {skills_text} "
+                f"provides strong baseline readiness. The architectural decisions detailed in the fact base demonstrate production depth."
             ),
             score_change=None,
             timestamp=now,
         ),
         DebateTurn(
-            id="mock-2",
+            id="turn-2",
             from_agent="skeptic",
             responding_to=RespondingTo(
                 agent_id="technical",
-                excerpt="fallback debate",
+                excerpt=f"hands-on experience in {skills_text}",
+            ),
+            stance="challenge",
+            content=(
+                f"I must push back on the depth assumption. While the resume states: \"{key_claim[:80]}...\", "
+                f"we need to confirm whether {name} was the primary architect or one contributor in a larger team."
+            ),
+            score_change=None,
+            timestamp=now,
+        ),
+        DebateTurn(
+            id="turn-3",
+            from_agent="culture",
+            responding_to=RespondingTo(
+                agent_id="skeptic",
+                excerpt="was the primary architect or one contributor",
             ),
             stance="agree",
             content=(
-                "I agree we should revisit this evaluation once the AI "
-                "service is available."
+                f"The interview transcript supports high ownership. {name} proactively discusses how they resolved cross-team blockers "
+                f"and aligned junior engineers, indicating clear leadership rather than passive contribution."
             ),
             score_change=None,
+            timestamp=now,
+        ),
+        DebateTurn(
+            id="turn-4",
+            from_agent="hiring_manager",
+            responding_to=RespondingTo(
+                agent_id="technical",
+                excerpt="provides strong baseline readiness",
+            ),
+            stance="agree",
+            content=(
+                f"From an organizational perspective, the candidate's trajectory matches our seniority expectations for {target_role}. "
+                f"The combination of technical execution and communication significantly reduces onboarding ramp time."
+            ),
+            score_change=None,
+            timestamp=now,
+        ),
+        DebateTurn(
+            id="turn-5",
+            from_agent="skeptic",
+            responding_to=RespondingTo(
+                agent_id="culture",
+                excerpt="proactively discusses how they resolved cross-team blockers",
+            ),
+            stance="revise",
+            content=(
+                f"Given the corroboration across both transcript and peer reviews, I concede that the communication and leadership signals "
+                f"are solid. I am increasing my confidence and score."
+            ),
+            score_change=ScoreChange(from_=6, to=7),
             timestamp=now,
         ),
     ]

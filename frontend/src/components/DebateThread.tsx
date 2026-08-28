@@ -13,6 +13,8 @@ import {
   Loader2,
   ArrowDown,
   ArrowUp,
+  AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
 import type { AgentId, DebateTurn } from '../types';
@@ -140,9 +142,11 @@ function DebateBubble({
 export function DebateThread() {
   const debateTurns = usePipelineStore((s) => s.debateTurns);
   const debateStatus = usePipelineStore((s) => s.debateStatus);
+  const debateError = usePipelineStore((s) => s.debateError);
   const revealedTurns = usePipelineStore((s) => s.revealedTurns);
   const revealNextTurn = usePipelineStore((s) => s.revealNextTurn);
   const revealAllTurns = usePipelineStore((s) => s.revealAllTurns);
+  const startDebate = usePipelineStore((s) => s.startDebate);
   const startVerdict = usePipelineStore((s) => s.startVerdict);
   const verdictStatus = usePipelineStore((s) => s.verdictStatus);
 
@@ -154,6 +158,7 @@ export function DebateThread() {
 
   const allRevealed = revealedTurns >= debateTurns.length && debateTurns.length > 0;
   const isLoading = debateStatus === 'running' && debateTurns.length === 0;
+  const isError = debateStatus === 'error';
 
   // Fake loading progress for debate to avoid static spinning wheel
   useEffect(() => {
@@ -220,6 +225,30 @@ export function DebateThread() {
           Agents now see each other's independent opinions and respond to specific points.
         </p>
       </div>
+
+      {/* Error Notice */}
+      {isError && (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 p-4 rounded-lg bg-danger/10 border border-danger/30 text-danger flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+          <div className="flex items-center gap-2.5">
+            <AlertCircle size={18} className="flex-shrink-0" />
+            <div>
+              <p className="text-[13px] font-semibold">Debate Generation Interrupted</p>
+              <p className="text-[12px] opacity-90">{debateError || 'A connection issue occurred while deliberating.'}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => startDebate()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-danger text-white text-[12px] font-medium hover:bg-danger/90 transition-colors w-fit"
+          >
+            <RotateCcw size={13} />
+            Retry Debate
+          </button>
+        </motion.div>
+      )}
 
       {/* Controls */}
       {debateTurns.length > 0 && (

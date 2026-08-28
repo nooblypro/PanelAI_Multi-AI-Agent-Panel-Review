@@ -62,6 +62,58 @@ class TestIndependentReviewEndpoint:
         assert agent_ids == {"technical", "culture", "hiring_manager", "skeptic"}
 
     @pytest.mark.asyncio
+    async def test_single_agent_review_success(self, client, sample_profile):
+        """POST /api/independent-review/{agent_id} returns single opinion."""
+        async def mock_generate_json(*, system_prompt, user_prompt, stage, agent_id=None):
+            return {
+                "score": 8,
+                "confidence": 80,
+                "verdict": "yes",
+                "summary": "Technical review summary",
+                "evidence": [
+                    {
+                        "quote": "6 years building distributed systems at scale",
+                        "source": "resume",
+                        "note": "Proven systems depth",
+                    }
+                ],
+            }
+
+        with patch(
+            "app.services.independent_review.generate_json",
+            side_effect=mock_generate_json,
+        ):
+            resp = await client.post(
+                "/api/independent-review/technical",
+                json=sample_profile.model_dump(by_alias=True),
+            )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "opinion" in data
+        assert data["opinion"]["agentId"] == "technical"
+        assert data["opinion"]["score"] == 8
+
+    @pytest.mark.asyncio
+    async def test_single_agent_review_fallback_on_llm_error(self, client, sample_profile):
+        """POST /api/independent-review/{agent_id} returns fallback opinion when LLM fails."""
+        with patch(
+            "app.services.independent_review.generate_json",
+            side_effect=Exception("Rate limit 429"),
+        ):
+            resp = await client.post(
+                "/api/independent-review/skeptic",
+                json=sample_profile.model_dump(by_alias=True),
+            )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "opinion" in data
+        assert data["opinion"]["agentId"] == "skeptic"
+        assert "warnings" in data
+        assert any("fallback" in w.lower() for w in data["warnings"])
+
+    @pytest.mark.asyncio
     async def test_invalid_body_returns_422(self, client):
         """Missing required fields should return 422."""
         resp = await client.post(
