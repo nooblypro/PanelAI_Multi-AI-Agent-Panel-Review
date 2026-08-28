@@ -1,7 +1,21 @@
 import type { AgentOpinion, CandidateProfile, DebateTurn, FinalDecision } from '../types';
 
 // Backend API base URL — configurable via Vite env var (VITE_API_URL or VITE_API_BASE_URL)
-const API_BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+function getApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
+  if (envUrl) {
+    return envUrl.replace(/\/$/, '');
+  }
+  if (import.meta.env.PROD) {
+    console.warn(
+      '[PanelAI] VITE_API_URL is not set in this production build. Defaulting to http://localhost:8000. ' +
+      'Set VITE_API_URL in your hosting environment (e.g. Render, Vercel) to point to your deployed backend.'
+    );
+  }
+  return 'http://localhost:8000';
+}
+
+export const API_BASE = getApiBase();
 
 /**
  * Build a structured CandidateProfile from files and/or text inputs.
@@ -52,7 +66,7 @@ export async function buildCandidateProfile(params: {
 /**
  * Run 4 independent AI agent evaluations in parallel.
  *
- * Calls POST /api/independent-review with the candidate profile.
+ * Calls POST /api/independent-review/{agentId} with the candidate profile.
  * The backend enforces full agent independence — each agent sees
  * only the profile and its own persona prompt, never another agent's output.
  */
@@ -63,6 +77,8 @@ export async function runIndependentReview(
   const agents = ['technical', 'culture', 'hiring_manager', 'skeptic'];
   
   const promises = agents.map(async (agentId) => {
+    let errorDetail = '';
+    // Primary: Call single agent endpoint for live parallel progression
     try {
       const res = await fetch(`${API_BASE}/api/independent-review/${agentId}`, {
         method: 'POST',
@@ -77,7 +93,9 @@ export async function runIndependentReview(
         }
         return data.opinion;
       }
-    } catch (e) {
+      errorDetail = `HTTP ${res.status}: ${await res.text().catch(() => '')}`;
+    } catch (e: any) {
+      errorDetail = e?.message || 'Network request failed';
       console.warn(`Single agent review fetch failed for ${agentId}:`, e);
     }
 
@@ -96,28 +114,14 @@ export async function runIndependentReview(
           return found;
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn(`Batch review fallback failed for ${agentId}:`, e);
     }
 
-    // Tertiary client fallback
-    if (onProgress) onProgress(agentId);
-    return {
-      agentId,
-      round: 'independent',
-      score: agentId === 'skeptic' ? 6 : 8,
-      confidence: 70,
-      verdict: agentId === 'skeptic' ? 'lean_yes' : 'yes',
-      summary: `[Fallback assessment] Independent evaluation for ${agentId} based on candidate fact base.`,
-      evidence: [
-        {
-          quote: profile.skills?.[0]?.evidence || 'Demonstrated domain experience',
-          source: 'resume',
-          note: `Extracted qualification for ${agentId} persona`,
-        },
-      ],
-      timestamp: new Date().toISOString(),
-    };
+    // If backend attempts failed, fail cleanly so user is notified instead of silent fabrication
+    throw new Error(
+      `Agent ${agentId} review failed (${errorDetail || 'backend unavailable'}). Please check backend connection and CORS configuration.`
+    );
   });
 
   return Promise.all(promises);

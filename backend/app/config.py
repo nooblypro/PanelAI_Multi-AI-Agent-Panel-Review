@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional
-from pydantic import Field, AliasChoices
+import json
+from typing import Any, Literal, Optional, Union
+from pydantic import Field, AliasChoices, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,27 +16,63 @@ class Settings(BaseSettings):
     )
 
     # Provider Selection
-    llm_provider: str = "openrouter"  # "openrouter" | "gemini"
+    llm_provider: str = Field(
+        default="openrouter",
+        validation_alias=AliasChoices("LLM_PROVIDER", "llm_provider"),
+    )
     llm_model: str = Field(
         default="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
         validation_alias=AliasChoices("OPENROUTER_MODEL", "LLM_MODEL", "openrouter_model", "llm_model"),
     )
 
     # OpenRouter Configuration
-    openrouter_api_key: str = ""
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("OPENROUTER_API_KEY", "openrouter_api_key", "OPEN_ROUTER_API_KEY"),
+    )
+    openrouter_base_url: str = Field(
+        default="https://openrouter.ai/api/v1",
+        validation_alias=AliasChoices("OPENROUTER_BASE_URL", "openrouter_base_url"),
+    )
 
     # Gemini Configuration (alternative)
-    gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("GEMINI_API_KEY", "gemini_api_key"),
+    )
+    gemini_model: str = Field(
+        default="gemini-2.0-flash",
+        validation_alias=AliasChoices("GEMINI_MODEL", "gemini_model"),
+    )
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: Union[list[str], str] = Field(
+        default=["http://localhost:5173"],
+        validation_alias=AliasChoices("CORS_ORIGINS", "cors_origins"),
+    )
 
     # App
     app_name: str = "PanelAI Backend"
     app_version: str = "0.1.0"
     debug: bool = False
+
+    @field_validator("cors_origins", mode="after")
+    @classmethod
+    def normalize_cors_origins(cls, v: Any) -> list[str]:
+        """Normalize comma-separated strings or JSON arrays into a list of clean origin URLs."""
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return [str(item).strip().rstrip("/") for item in parsed if str(item).strip()]
+                except Exception:
+                    pass
+            return [part.strip().rstrip("/") for part in v.split(",") if part.strip()]
+        elif isinstance(v, (list, tuple, set)):
+            return [str(item).strip().rstrip("/") for item in v if str(item).strip()]
+        return ["http://localhost:5173"]
 
     def get_api_key(self) -> str:
         """Return the API key for the currently configured provider."""
@@ -66,16 +103,14 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
         ]
         origins: list[str] = []
-        if isinstance(self.cors_origins, list):
+        if isinstance(self.cors_origins, (list, tuple, set)):
             for item in self.cors_origins:
-                if isinstance(item, str):
-                    for part in item.split(","):
-                        cleaned = part.strip().strip("[]'\"")
-                        if cleaned and cleaned not in origins:
-                            origins.append(cleaned)
+                cleaned = str(item).strip().rstrip("/")
+                if cleaned and cleaned not in origins:
+                    origins.append(cleaned)
         elif isinstance(self.cors_origins, str):
-            for part in str(self.cors_origins).split(","):
-                cleaned = part.strip().strip("[]'\"")
+            for part in self.cors_origins.split(","):
+                cleaned = part.strip().strip("[]'\"").rstrip("/")
                 if cleaned and cleaned not in origins:
                     origins.append(cleaned)
 
