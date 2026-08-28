@@ -24,6 +24,7 @@ EXTRACTION RULES:
 6. "claims": List 3 to 6 notable verifiable claims made by the candidate:
    - "text": Concrete claim about leadership, metrics, system scale, or architecture
    - "source": "resume" or "transcript"
+7. ANTI-HALLUCINATION: Do NOT invent unmentioned companies, skills, graduation years, or metrics. Extract ONLY factual information present in the source text.
 
 OUTPUT FORMAT: Respond with ONLY a valid JSON object matching this structure:
 {
