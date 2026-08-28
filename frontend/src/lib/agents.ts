@@ -1,7 +1,7 @@
 import type { AgentOpinion, CandidateProfile, DebateTurn, FinalDecision } from '../types';
 
-// Backend API base URL — configurable via Vite env var
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Backend API base URL — configurable via Vite env var (VITE_API_URL or VITE_API_BASE_URL)
+const API_BASE = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
 /**
  * Build a structured CandidateProfile from files and/or text inputs.

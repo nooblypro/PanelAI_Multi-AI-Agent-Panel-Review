@@ -151,11 +151,29 @@ class UnresolvedDisagreement(BaseModel):
     description: str
 
 
+class CriterionScore(BaseModel):
+    model_config = _CAMEL
+    name: str
+    score: float = Field(ge=1.0, le=10.0)
+    weight: float = Field(ge=0.0, le=1.0)
+    weighted_score: float = Field(alias="weightedScore")
+    rationale: str
+
+
+class WhatWouldChange(BaseModel):
+    model_config = _CAMEL
+    move_up: list[str] = Field(alias="moveUp")
+    move_down: list[str] = Field(alias="moveDown")
+
+
 class FinalDecision(BaseModel):
     model_config = _CAMEL
 
     recommendation: Recommendation
     confidence_level: int = Field(ge=0, le=100, alias="confidenceLevel")
+    confidence_rationale: Optional[str] = Field(default=None, alias="confidenceRationale")
+    overall_score: Optional[float] = Field(default=None, alias="overallScore")
+    criteria_scores: Optional[list[CriterionScore]] = Field(default=None, alias="criteriaScores")
     reasoning: str
     weight_breakdown: list[WeightBreakdown] = Field(alias="weightBreakdown")
     strengths: list[str]
@@ -163,6 +181,7 @@ class FinalDecision(BaseModel):
     unresolved_disagreements: list[UnresolvedDisagreement] = Field(
         alias="unresolvedDisagreements"
     )
+    what_would_change: Optional[WhatWouldChange] = Field(default=None, alias="whatWouldChange")
 
 
 # ---------------------------------------------------------------------------

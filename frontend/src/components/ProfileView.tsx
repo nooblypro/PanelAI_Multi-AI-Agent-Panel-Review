@@ -279,6 +279,7 @@ export function ProfileView() {
         <button
           onClick={handleStartReview}
           disabled={reviewStatus === 'running'}
+          aria-label="Run independent review with 4 parallel evaluator agents"
           className="flex items-center gap-2 rounded-lg px-5 py-2.5 font-semibold text-sm bg-accent-technical text-bg hover:bg-accent-technical/90 transition-colors disabled:opacity-50"
         >
           Run Panel Review

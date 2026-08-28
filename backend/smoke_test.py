@@ -111,8 +111,20 @@ async def run_smoke_test():
         assert resp.status_code == 200, f"Synthesis failed ({resp.status_code}): {resp.text}"
         synth_data = resp.json()
         decision = synth_data.get("decision", {})
-        print(f"  -> Decision: {decision.get('recommendation')} (Confidence: {decision.get('confidenceLevel')}%)")
+        overall_score = decision.get("overallScore")
+        print(f"  -> Decision: {decision.get('recommendation')} (Overall Score: {overall_score}/10, Confidence: {decision.get('confidenceLevel')}%)")
+        print(f"     Confidence Rationale: {decision.get('confidenceRationale')}")
         print(f"     Reasoning: {decision.get('reasoning')[:110]}...")
+
+        criteria = decision.get("criteriaScores", [])
+        print(f"  -> Job Description Evaluation Criteria ({len(criteria)} dimensions):")
+        for c in criteria:
+            weight_pct = int(c['weight'] * 100)
+            print(f"     • {c['name']} ({weight_pct}%): {c['score']}/10 → +{c['weightedScore']} pts ({c.get('rationale', '')[:60]}...)")
+
+        wwc = decision.get("whatWouldChange", {})
+        if wwc.get("moveUp"):
+            print(f"  -> What Would Change: Move Up → {wwc['moveUp'][0][:70]}...")
 
         assert decision.get("recommendation") in {"Strong Hire", "Hire", "Hold", "No Hire"}
 

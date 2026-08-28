@@ -27,6 +27,9 @@ class UnsupportedFileTypeError(FileExtractionError):
     """Raised when an unsupported file extension is provided."""
 
 
+MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB limit
+
+
 def extract_text_from_bytes(content: bytes, filename: str) -> str:
     """Extract text from file bytes based on file extension.
 
@@ -47,10 +50,15 @@ def extract_text_from_bytes(content: bytes, filename: str) -> str:
     UnsupportedFileTypeError
         If file extension is not .pdf, .docx, or .txt.
     FileExtractionError
-        If file extraction fails due to corrupted content or parsing errors.
+        If file exceeds 10MB or extraction fails due to corrupted content.
     """
     if not content:
         return ""
+
+    if len(content) > MAX_FILE_SIZE_BYTES:
+        raise FileExtractionError(
+            f"File '{filename}' ({len(content) / (1024 * 1024):.1f}MB) exceeds the maximum allowed size of 10MB."
+        )
 
     ext = os.path.splitext(filename)[1].lower()
 

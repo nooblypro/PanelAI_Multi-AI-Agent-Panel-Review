@@ -92,4 +92,19 @@ python smoke_test.py
 | `POST` | `/api/build-profile` | `multipart/form-data` with optional `targetRoleText`, `targetRoleFile`, `resumeText`, `resumeFile`, `transcriptText`, `transcriptFile`, `candidateName` | `{"profile": CandidateProfile}` | Normalizes `.pdf`, `.docx`, `.txt` and applies precedence rules |
 | `POST` | `/api/independent-review` | `CandidateProfile` | `{"opinions": AgentOpinion[], "warnings"?: string[]}` | Runs 4 isolated agents in parallel (`asyncio.gather`) |
 | `POST` | `/api/debate` | `{"profile": CandidateProfile, "opinions": AgentOpinion[]}` | `{"debateTurns": DebateTurn[], "warnings"?: string[]}` | Multi-turn debate cross-referencing statements |
-| `POST` | `/api/synthesize` | `{"profile": CandidateProfile, "opinions": AgentOpinion[], "debateTurns": DebateTurn[]}` | `{"decision": FinalDecision, "warnings"?: string[]}` | Weighted synthesis with strengths, concerns & disagreements |
+| `POST` | `/api/synthesize` | `{"profile": CandidateProfile, "opinions": AgentOpinion[], "debateTurns": DebateTurn[]}` | `{"decision": FinalDecision, "warnings"?: string[]}` | 5 JD criteria weighted synthesis with strengths, concerns, uncertainty tracking & What Would Change |
+
+---
+
+## 6. Scoring Methodology & 5 JD Dimensions
+
+The final score is mathematically calculated from the 5 official Job Description evaluation dimensions (sum of weights = 1.0):
+1. **Technical ability** (30% weight)
+2. **Agentic AI / LLM experience** (30% weight)
+3. **Production engineering** (20% weight)
+4. **Problem solving** (10% weight)
+5. **Communication / collaboration** (10% weight)
+
+$$\text{Overall Score} = \sum_{i=1}^{5} (\text{Score}_i \times \text{Weight}_i)$$
+
+The 4 evaluator agents act as independent perspectives providing evidence and cross-examination during the debate, feeding into the mathematical scoring engine.

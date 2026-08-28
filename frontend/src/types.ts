@@ -34,14 +34,31 @@ export interface DebateTurn {
   timestamp: string;
 }
 
+export interface CriterionScore {
+  name: string;
+  score: number; // 1.0 - 10.0
+  weight: number; // 0.0 - 1.0 (e.g. 0.30)
+  weightedScore: number; // score * weight
+  rationale: string;
+}
+
+export interface WhatWouldChange {
+  moveUp: string[];
+  moveDown: string[];
+}
+
 export interface FinalDecision {
   recommendation: 'Strong Hire' | 'Hire' | 'Hold' | 'No Hire';
   confidenceLevel: number; // 0-100
+  confidenceRationale?: string;
+  overallScore?: number; // 1.0 - 10.0
+  criteriaScores?: CriterionScore[];
   reasoning: string;
   weightBreakdown: { agentId: AgentId; weight: number; rationale: string }[];
   strengths: string[];
   concerns: string[];
   unresolvedDisagreements: { agents: AgentId[]; topic: string; description: string }[];
+  whatWouldChange?: WhatWouldChange;
 }
 
 export type Stage = 'intake' | 'profile' | 'review' | 'debate' | 'verdict';

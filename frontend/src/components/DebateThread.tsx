@@ -216,6 +216,7 @@ export function DebateThread() {
             <button
               onClick={play}
               disabled={allRevealed}
+              aria-label={revealedTurns === 0 ? 'Play Debate' : 'Resume Debate'}
               className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] font-medium bg-surface-2 border border-white/[0.08] hover:border-white/[0.15] text-text transition-colors disabled:opacity-40"
             >
               <Play size={13} />
@@ -224,6 +225,7 @@ export function DebateThread() {
           ) : (
             <button
               onClick={pause}
+              aria-label="Pause Debate"
               className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] font-medium bg-surface-2 border border-white/[0.08] hover:border-white/[0.15] text-text transition-colors"
             >
               <Pause size={13} />
@@ -233,6 +235,7 @@ export function DebateThread() {
           <button
             onClick={revealAllTurns}
             disabled={allRevealed}
+            aria-label="Skip to end of debate and reveal all turns"
             className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12px] font-medium bg-surface-2 border border-white/[0.08] hover:border-white/[0.15] text-text transition-colors disabled:opacity-40"
           >
             <SkipForward size={13} />

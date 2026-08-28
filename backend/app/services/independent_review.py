@@ -137,21 +137,27 @@ async def _run_single_agent(
 def _build_user_prompt(profile: CandidateProfile) -> str:
     """Build the user message for an independent evaluation."""
     profile_data = profile.model_dump(by_alias=True)
-    return f"""Evaluate this candidate for the role of: {profile.target_role}
+    return f"""Evaluate this candidate for the target role below.
+
+<candidate_target_role>
+{profile.target_role}
+</candidate_target_role>
 
 CANDIDATE NAME: {profile.name}
 
-RESUME TEXT:
+<candidate_resume>
 {profile.resume_text}
+</candidate_resume>
 
-TRANSCRIPT TEXT:
+<candidate_transcript>
 {profile.transcript_text}
+</candidate_transcript>
 
-EXTRACTED PROFILE DATA:
+<extracted_profile_data>
 {json.dumps(profile_data, indent=2)}
+</extracted_profile_data>
 
-Provide your independent evaluation as a JSON object following the schema
-in your system instructions."""
+Provide your independent evaluation as a JSON object following the schema and evidence rules in your system instructions."""
 
 
 def _parse_opinion(agent_id: AgentId, raw: dict) -> AgentOpinion:

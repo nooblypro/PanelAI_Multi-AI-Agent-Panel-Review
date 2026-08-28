@@ -62,7 +62,20 @@ class Settings(BaseSettings):
             "http://localhost:3000",
             "http://127.0.0.1:3000",
         ]
-        origins = list(self.cors_origins) if isinstance(self.cors_origins, list) else [str(self.cors_origins)]
+        origins: list[str] = []
+        if isinstance(self.cors_origins, list):
+            for item in self.cors_origins:
+                if isinstance(item, str):
+                    for part in item.split(","):
+                        cleaned = part.strip().strip("[]'\"")
+                        if cleaned and cleaned not in origins:
+                            origins.append(cleaned)
+        elif isinstance(self.cors_origins, str):
+            for part in str(self.cors_origins).split(","):
+                cleaned = part.strip().strip("[]'\"")
+                if cleaned and cleaned not in origins:
+                    origins.append(cleaned)
+
         for d in defaults:
             if d not in origins:
                 origins.append(d)

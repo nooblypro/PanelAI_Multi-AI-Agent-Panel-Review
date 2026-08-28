@@ -195,6 +195,7 @@ export function IndependentReview() {
         >
           <button
             onClick={handleStartDebate}
+            aria-label="Start panel debate between the 4 evaluator agents"
             className="flex items-center gap-2 rounded-lg px-5 py-2.5 font-semibold text-sm bg-accent-technical text-bg hover:bg-accent-technical/90 transition-colors"
           >
             Start Debate

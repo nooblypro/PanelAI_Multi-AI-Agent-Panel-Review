@@ -63,6 +63,12 @@ class TestFileExtractionService:
         with pytest.raises(FileExtractionError):
             extract_text_from_bytes(b"not a valid zip or docx file", "corrupted.docx")
 
+    def test_file_exceeding_10mb_raises_error(self):
+        oversized = b"a" * (11 * 1024 * 1024)
+        with pytest.raises(FileExtractionError) as exc:
+            extract_text_from_bytes(oversized, "huge.txt")
+        assert "exceeds the maximum allowed size of 10MB" in str(exc.value)
+
 
 class TestPrecedenceAndValidation:
     """Unit tests for input precedence and missing field detection."""
@@ -326,6 +332,21 @@ class TestBuildProfileEndpointCombinations:
             )
             assert resp.status_code == 400
             assert "Unsupported file type '.exe'" in resp.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_oversized_file_upload_returns_400(self):
+        """16. Oversized file (>10MB) returns 400 Bad Request."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            oversized_bytes = b"x" * (11 * 1024 * 1024)
+            resp = await client.post(
+                "/api/build-profile",
+                data={"targetRoleText": "Role", "transcriptText": "Transcript"},
+                files={
+                    "resumeFile": ("huge_resume.txt", oversized_bytes, "text/plain"),
+                },
+            )
+            assert resp.status_code == 400
+            assert "exceeds the maximum allowed size of 10MB" in resp.json()["detail"]
 
 
 class TestCORSPreflight:
