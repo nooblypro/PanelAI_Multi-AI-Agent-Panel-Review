@@ -13,6 +13,7 @@ interface PipelineState {
   reviewStatus: 'idle' | 'running' | 'done' | 'error';
   reviewError: string | null;
   agentProgress: Record<string, boolean>; // agentId -> done?
+  agentErrors: Record<string, string | null>; // agentId -> error message if any
 
   // Debate state
   debateStatus: 'idle' | 'running' | 'done' | 'error';
@@ -50,6 +51,7 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   reviewStatus: 'idle',
   reviewError: null,
   agentProgress: {},
+  agentErrors: {},
   debateStatus: 'idle',
   debateError: null,
   revealedTurns: 0,
@@ -73,19 +75,30 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
       reviewStatus: 'running',
       reviewError: null,
       agentProgress: { technical: false, culture: false, hiring_manager: false, skeptic: false },
+      agentErrors: { technical: null, culture: null, hiring_manager: null, skeptic: null },
       opinions: [],
     });
 
     try {
-      const opinions = await runIndependentReview(profile, (agentId) => {
-        set((state) => ({
-          agentProgress: { ...state.agentProgress, [agentId]: true }
-        }));
+      const opinions = await runIndependentReview(profile, (agentId, result) => {
+        if (result.success && result.opinion) {
+          set((state) => ({
+            agentProgress: { ...state.agentProgress, [agentId]: true },
+            agentErrors: { ...state.agentErrors, [agentId]: null },
+            opinions: [...state.opinions.filter((o) => o.agentId !== agentId), result.opinion!],
+          }));
+        } else {
+          set((state) => ({
+            agentProgress: { ...state.agentProgress, [agentId]: false },
+            agentErrors: { ...state.agentErrors, [agentId]: result.error || 'Evaluation failed' },
+          }));
+        }
       });
 
       // Finalize
       set({
         agentProgress: { technical: true, culture: true, hiring_manager: true, skeptic: true },
+        agentErrors: { technical: null, culture: null, hiring_manager: null, skeptic: null },
         opinions,
         reviewStatus: 'done',
         reviewError: null,

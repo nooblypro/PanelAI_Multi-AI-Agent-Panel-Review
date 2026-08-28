@@ -3,9 +3,23 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Literal, Optional, Union
+from urllib.parse import urlparse
 from pydantic import Field, AliasChoices, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _normalize_single_origin(raw: str) -> str:
+    cleaned = raw.strip().strip("'\"`[]()").strip()
+    if not cleaned:
+        return ""
+    if not cleaned.startswith("http://") and not cleaned.startswith("https://"):
+        cleaned = "https://" + cleaned
+    parsed = urlparse(cleaned)
+    if parsed.netloc:
+        return f"{parsed.scheme}://{parsed.netloc}"
+    return cleaned.rstrip("/")
 
 
 class Settings(BaseSettings):
@@ -48,7 +62,18 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: Union[list[str], str] = Field(
         default=["http://localhost:5173"],
-        validation_alias=AliasChoices("CORS_ORIGINS", "cors_origins"),
+        validation_alias=AliasChoices(
+            "CORS_ORIGINS",
+            "cors_origins",
+            "CORS_ORIGIN",
+            "cors_origin",
+            "FRONTEND_URL",
+            "frontend_url",
+            "ALLOWED_ORIGINS",
+            "allowed_origins",
+            "CORS_ALLOWED_ORIGINS",
+            "cors_allowed_origins",
+        ),
     )
 
     # App
@@ -59,20 +84,32 @@ class Settings(BaseSettings):
     @field_validator("cors_origins", mode="after")
     @classmethod
     def normalize_cors_origins(cls, v: Any) -> list[str]:
-        """Normalize comma-separated strings or JSON arrays into a list of clean origin URLs."""
-        if isinstance(v, str):
-            v = v.strip()
-            if v.startswith("[") and v.endswith("]"):
+        """Normalize comma/semicolon/whitespace separated strings or JSON arrays into clean origin URLs."""
+        if isinstance(v, (list, tuple, set)):
+            raw_items = list(v)
+        elif isinstance(v, str):
+            s = v.strip()
+            if s.startswith("[") and s.endswith("]"):
                 try:
-                    parsed = json.loads(v)
+                    parsed = json.loads(s)
                     if isinstance(parsed, list):
-                        return [str(item).strip().rstrip("/") for item in parsed if str(item).strip()]
+                        raw_items = parsed
+                    else:
+                        raw_items = [s[1:-1]]
                 except Exception:
-                    pass
-            return [part.strip().rstrip("/") for part in v.split(",") if part.strip()]
-        elif isinstance(v, (list, tuple, set)):
-            return [str(item).strip().rstrip("/") for item in v if str(item).strip()]
-        return ["http://localhost:5173"]
+                    raw_items = [s[1:-1]]
+            else:
+                raw_items = re.split(r"[,;\s]+", s)
+        else:
+            raw_items = []
+
+        origins: list[str] = []
+        for item in raw_items:
+            normalized = _normalize_single_origin(str(item))
+            if normalized and normalized not in origins:
+                origins.append(normalized)
+
+        return origins if origins else ["http://localhost:5173"]
 
     def get_api_key(self) -> str:
         """Return the API key for the currently configured provider."""
@@ -103,16 +140,11 @@ class Settings(BaseSettings):
             "http://127.0.0.1:3000",
         ]
         origins: list[str] = []
-        if isinstance(self.cors_origins, (list, tuple, set)):
-            for item in self.cors_origins:
-                cleaned = str(item).strip().rstrip("/")
-                if cleaned and cleaned not in origins:
-                    origins.append(cleaned)
-        elif isinstance(self.cors_origins, str):
-            for part in self.cors_origins.split(","):
-                cleaned = part.strip().strip("[]'\"").rstrip("/")
-                if cleaned and cleaned not in origins:
-                    origins.append(cleaned)
+        configured = self.cors_origins if isinstance(self.cors_origins, list) else [self.cors_origins]
+        for item in configured:
+            normalized = _normalize_single_origin(str(item))
+            if normalized and normalized not in origins:
+                origins.append(normalized)
 
         for d in defaults:
             if d not in origins:

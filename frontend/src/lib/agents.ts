@@ -72,59 +72,69 @@ export async function buildCandidateProfile(params: {
  */
 export async function runIndependentReview(
   profile: CandidateProfile,
-  onProgress?: (agentId: string) => void
+  onProgress?: (
+    agentId: string,
+    result: { success: boolean; opinion?: AgentOpinion; error?: string }
+  ) => void
 ): Promise<AgentOpinion[]> {
   const agents = ['technical', 'culture', 'hiring_manager', 'skeptic'];
   
-  const promises = agents.map(async (agentId) => {
-    let errorDetail = '';
-    // Primary: Call single agent endpoint for live parallel progression
-    try {
-      const res = await fetch(`${API_BASE}/api/independent-review/${agentId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
-      });
+  const results = await Promise.all(
+    agents.map(async (agentId) => {
+      let errorDetail = '';
+      // Primary: Call single agent endpoint for live parallel progression
+      try {
+        const res = await fetch(`${API_BASE}/api/independent-review/${agentId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profile),
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        if (onProgress) {
-          onProgress(agentId);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.opinion) {
+            if (onProgress) onProgress(agentId, { success: true, opinion: data.opinion });
+            return { success: true, opinion: data.opinion as AgentOpinion };
+          }
         }
-        return data.opinion;
+        errorDetail = `HTTP ${res.status}: ${await res.text().catch(() => '')}`;
+      } catch (e: any) {
+        errorDetail = e?.message || 'Network request failed';
+        console.warn(`Single agent review fetch failed for ${agentId}:`, e);
       }
-      errorDetail = `HTTP ${res.status}: ${await res.text().catch(() => '')}`;
-    } catch (e: any) {
-      errorDetail = e?.message || 'Network request failed';
-      console.warn(`Single agent review fetch failed for ${agentId}:`, e);
-    }
 
-    // Secondary fallback: Try batch endpoint
-    try {
-      const batchRes = await fetch(`${API_BASE}/api/independent-review`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
-      });
-      if (batchRes.ok) {
-        const batchData = await batchRes.json();
-        const found = (batchData.opinions || []).find((op: any) => op.agentId === agentId);
-        if (found) {
-          if (onProgress) onProgress(agentId);
-          return found;
+      // Secondary fallback: Try batch endpoint
+      try {
+        const batchRes = await fetch(`${API_BASE}/api/independent-review`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(profile),
+        });
+        if (batchRes.ok) {
+          const batchData = await batchRes.json();
+          const found = (batchData.opinions || []).find((op: any) => op.agentId === agentId);
+          if (found) {
+            if (onProgress) onProgress(agentId, { success: true, opinion: found });
+            return { success: true, opinion: found as AgentOpinion };
+          }
         }
+      } catch (e: any) {
+        console.warn(`Batch review fallback failed for ${agentId}:`, e);
       }
-    } catch (e: any) {
-      console.warn(`Batch review fallback failed for ${agentId}:`, e);
-    }
 
-    // If backend attempts failed, fail cleanly so user is notified instead of silent fabrication
-    throw new Error(
-      `Agent ${agentId} review failed (${errorDetail || 'backend unavailable'}). Please check backend connection and CORS configuration.`
-    );
-  });
+      // If backend attempts failed, fail cleanly so user is notified instead of silent fabrication
+      const errMsg = `Agent ${agentId} review failed (${errorDetail || 'backend unavailable'}). Please check backend connection and CORS configuration.`;
+      if (onProgress) onProgress(agentId, { success: false, error: errMsg });
+      return { success: false, error: errMsg };
+    })
+  );
 
-  return Promise.all(promises);
+  const failed = results.filter((r) => !r.success);
+  if (failed.length > 0) {
+    throw new Error(failed.map((f) => f.error).join('\n'));
+  }
+
+  return results.map((r) => r.opinion!);
 }
 
 /**

@@ -14,17 +14,42 @@ function AgentCard({
   opinion,
   isDone,
   allDone,
+  agentError,
   index,
 }: {
   agentId: AgentId;
   opinion?: AgentOpinion;
   isDone: boolean;
   allDone: boolean;
+  agentError?: string | null;
   index: number;
 }) {
   const Icon = AGENT_ICONS[agentId];
   const name = AGENT_NAMES[agentId];
   const color = AGENT_COLORS[agentId];
+
+  // If this specific agent failed
+  if (agentError) {
+    return (
+      <div
+        className="bg-surface rounded-lg border border-danger/30 p-5 overflow-hidden relative"
+        style={{ borderLeft: `3px solid #ef4444` }}
+      >
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center bg-danger/10">
+            <AlertCircle size={18} className="text-danger" />
+          </div>
+          <div>
+            <h3 className="text-[13px] font-semibold text-text">{name}</h3>
+            <p className="text-[11px] text-danger font-medium">Evaluation Failed</p>
+          </div>
+        </div>
+        <p className="text-[12px] text-muted leading-relaxed">
+          {agentError}
+        </p>
+      </div>
+    );
+  }
 
   // While running and not done: skeleton
   if (!isDone) {
@@ -142,6 +167,7 @@ export function IndependentReview() {
   const reviewStatus = usePipelineStore((s) => s.reviewStatus);
   const reviewError = usePipelineStore((s) => s.reviewError);
   const agentProgress = usePipelineStore((s) => s.agentProgress);
+  const agentErrors = usePipelineStore((s) => s.agentErrors);
   const setStage = usePipelineStore((s) => s.setStage);
   const startReview = usePipelineStore((s) => s.startReview);
   const startDebate = usePipelineStore((s) => s.startDebate);
@@ -207,6 +233,7 @@ export function IndependentReview() {
               opinion={opinion}
               isDone={agentProgress[id] || Boolean(opinion)}
               allDone={allDone}
+              agentError={agentErrors[id]}
               index={i}
             />
           );

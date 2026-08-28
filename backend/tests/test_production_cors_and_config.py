@@ -56,6 +56,23 @@ class TestEnvironmentAndConfig:
         assert "https://render-front.onrender.com" in origins
         assert "https://custom-domain.com" in origins
 
+    def test_origin_with_path_and_quotes(self, monkeypatch):
+        monkeypatch.setenv(
+            "CORS_ORIGINS",
+            '"https://promptwars-front.onrender.com/app", \'https://app.vercel.app/nested/route\'',
+        )
+        s = Settings()
+        origins = s.get_cors_origins()
+        assert "https://promptwars-front.onrender.com" in origins
+        assert "https://app.vercel.app" in origins
+
+    def test_frontend_url_alias(self, monkeypatch):
+        monkeypatch.delenv("CORS_ORIGINS", raising=False)
+        monkeypatch.setenv("FRONTEND_URL", "https://my-company-recruitment.onrender.com")
+        s = Settings()
+        origins = s.get_cors_origins()
+        assert "https://my-company-recruitment.onrender.com" in origins
+
 
 class TestProductionCORSPreflight:
     """Verify CORS preflights for production and local origins across all endpoints."""

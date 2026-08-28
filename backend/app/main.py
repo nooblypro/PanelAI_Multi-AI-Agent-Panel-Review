@@ -29,6 +29,10 @@ def create_app(app_settings: Settings | None = None) -> FastAPI:
             active_settings.llm_provider,
             active_settings.get_model(),
         )
+        logging.getLogger(__name__).info(
+            "[CORS] Allowed origins: %s",
+            active_settings.get_cors_origins(),
+        )
         yield
         from app.services.llm_client import close_http_client
         await close_http_client()
