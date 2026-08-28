@@ -18,7 +18,7 @@ from app.schemas import (
     UnresolvedDisagreement,
     WeightBreakdown,
 )
-from app.services.gemini_client import GeminiError, generate_json
+from app.services.llm_client import LLMError, generate_json
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ async def synthesize_decision(
         decision = _parse_decision(raw)
         return decision, warnings
 
-    except (GeminiError, Exception) as exc:
+    except (LLMError, Exception) as exc:
         logger.error("Synthesis failed: %s", exc)
         warnings.append(f"Synthesis failed: {exc}")
         return _mock_decision(opinions), warnings

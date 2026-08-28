@@ -18,7 +18,7 @@ from app.schemas import (
     RespondingTo,
     ScoreChange,
 )
-from app.services.gemini_client import GeminiError, generate_json
+from app.services.llm_client import LLMError, generate_json
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ async def run_debate(
 
         return turns, warnings
 
-    except (GeminiError, Exception) as exc:
+    except (LLMError, Exception) as exc:
         logger.error("Debate generation failed: %s", exc)
         warnings.append(f"Debate generation failed: {exc}")
         return _mock_debate(opinions), warnings

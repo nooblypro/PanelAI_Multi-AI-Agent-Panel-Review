@@ -21,7 +21,9 @@ logging.basicConfig(
 async def lifespan(app: FastAPI):
     """Application lifespan — no database, just log startup/shutdown."""
     logging.getLogger(__name__).info(
-        "PanelAI backend starting (model=%s)", settings.gemini_model
+        "PanelAI backend starting (provider=%s, model=%s)",
+        settings.llm_provider,
+        settings.get_model(),
     )
     yield
     logging.getLogger(__name__).info("PanelAI backend shutting down")
@@ -49,8 +51,9 @@ def create_app() -> FastAPI:
     async def health():
         return {
             "status": "ok",
-            "model": settings.gemini_model,
-            "has_api_key": bool(settings.gemini_api_key),
+            "provider": settings.llm_provider,
+            "model": settings.get_model(),
+            "has_api_key": bool(settings.get_api_key()),
         }
 
     return app

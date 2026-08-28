@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 
 from app.prompts.personas import get_persona_prompt
 from app.schemas import AgentId, AgentOpinion, CandidateProfile, Evidence
-from app.services.gemini_client import GeminiError, generate_json
+from app.services.llm_client import LLMError, generate_json
 from app.validation import EVIDENCE_RETRY_INSTRUCTION, validate_evidence
 
 logger = logging.getLogger(__name__)
@@ -120,7 +120,7 @@ async def _run_single_agent(
                 # Keep original, add all warnings
                 warnings.extend(ev_warnings)
                 warnings.extend(ev_warnings_retry)
-        except (GeminiError, Exception) as exc:
+        except (LLMError, Exception) as exc:
             logger.warning("Agent %s retry failed: %s", agent_id, exc)
             warnings.extend(ev_warnings)
     else:
@@ -191,7 +191,7 @@ def _clamp(value: int, lo: int, hi: int) -> int:
 
 
 def _mock_opinion(agent_id: AgentId) -> AgentOpinion:
-    """Return a fallback mock opinion when Gemini fails."""
+    """Return a fallback mock opinion when LLM fails."""
     now = datetime.now(timezone.utc).isoformat()
     return AgentOpinion(
         agent_id=agent_id,
@@ -207,7 +207,7 @@ def _mock_opinion(agent_id: AgentId) -> AgentOpinion:
             Evidence(
                 quote="[evaluation unavailable]",
                 source="resume",
-                note="Fallback: Gemini API call failed",
+                note="Fallback: AI evaluation service call failed",
             )
         ],
         timestamp=now,
