@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
+from pydantic import Field, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,7 +16,10 @@ class Settings(BaseSettings):
 
     # Provider Selection
     llm_provider: str = "openrouter"  # "openrouter" | "gemini"
-    llm_model: str = "nvidia/nemotron-3-ultra-550b-a55b:free"
+    llm_model: str = Field(
+        default="nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        validation_alias=AliasChoices("OPENROUTER_MODEL", "LLM_MODEL", "openrouter_model", "llm_model"),
+    )
 
     # OpenRouter Configuration
     openrouter_api_key: str = ""
@@ -46,8 +50,7 @@ class Settings(BaseSettings):
         """Return the model identifier for the currently configured provider."""
         provider = self.llm_provider.lower()
         if provider == "gemini":
-            # If user explicitly set gemini_model, prioritize it over the openrouter default
-            if self.llm_model == "nvidia/nemotron-3-ultra-550b-a55b:free" and self.gemini_model:
+            if self.gemini_model:
                 return self.gemini_model
             return self.llm_model
         return self.llm_model

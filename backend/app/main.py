@@ -19,13 +19,15 @@ logging.basicConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan — no database, just log startup/shutdown."""
+    """Application lifespan — initialize shared clients and cleanup on shutdown."""
     logging.getLogger(__name__).info(
         "PanelAI backend starting (provider=%s, model=%s)",
         settings.llm_provider,
         settings.get_model(),
     )
     yield
+    from app.services.llm_client import close_http_client
+    await close_http_client()
     logging.getLogger(__name__).info("PanelAI backend shutting down")
 
 

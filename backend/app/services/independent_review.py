@@ -96,35 +96,9 @@ async def _run_single_agent(
 
     opinion = _parse_opinion(agent_id, raw)
 
-    # Evidence validation — retry once if no exact matches
-    is_valid, ev_warnings = validate_evidence(opinion, profile)
-    if not is_valid:
-        logger.info("Agent %s: evidence invalid, retrying with instruction", agent_id)
-        retry_prompt = user_prompt + "\n\n" + EVIDENCE_RETRY_INSTRUCTION
-        try:
-            raw_retry = await generate_json(
-                system_prompt=system_prompt,
-                user_prompt=retry_prompt,
-                stage="independent_review_retry",
-                agent_id=agent_id,
-            )
-            opinion_retry = _parse_opinion(agent_id, raw_retry)
-            is_valid_retry, ev_warnings_retry = validate_evidence(
-                opinion_retry, profile
-            )
-            if is_valid_retry:
-                # Use the retried opinion — it has better evidence
-                opinion = opinion_retry
-                ev_warnings = ev_warnings_retry
-            else:
-                # Keep original, add all warnings
-                warnings.extend(ev_warnings)
-                warnings.extend(ev_warnings_retry)
-        except (LLMError, Exception) as exc:
-            logger.warning("Agent %s retry failed: %s", agent_id, exc)
-            warnings.extend(ev_warnings)
-    else:
-        warnings.extend(ev_warnings)
+    # Evidence validation — check substring match and collect warnings without slow blocking retry
+    _, ev_warnings = validate_evidence(opinion, profile)
+    warnings.extend(ev_warnings)
 
     return opinion, warnings
 

@@ -152,3 +152,37 @@ class TestIndependenceGuarantee:
         # The fallback opinion should be identifiable
         skeptic_op = next(op for op in opinions if op.agent_id == "skeptic")
         assert "fallback" in skeptic_op.summary.lower()
+
+    @pytest.mark.asyncio
+    async def test_concurrency_timing(self, sample_profile):
+        """All 4 agents running with 0.1s simulated latency should finish in < 0.25s (parallel),
+        not 0.4s+ (sequential)."""
+        import time
+
+        async def mock_generate_json(*, system_prompt, user_prompt, stage, agent_id=None):
+            await asyncio.sleep(0.1)
+            return {
+                "score": 7,
+                "confidence": 70,
+                "verdict": "yes",
+                "summary": "Test summary",
+                "evidence": [
+                    {
+                        "quote": "6 years building distributed systems at scale",
+                        "source": "resume",
+                        "note": "Test note",
+                    }
+                ],
+            }
+
+        start = time.perf_counter()
+        with patch(
+            "app.services.independent_review.generate_json",
+            side_effect=mock_generate_json,
+        ):
+            opinions, _ = await run_independent_reviews(sample_profile)
+        elapsed = time.perf_counter() - start
+
+        assert len(opinions) == 4
+        # Parallel execution: total duration should be ~0.1s, safely well under 0.25s
+        assert elapsed < 0.25, f"Expected parallel execution (<0.25s), took {elapsed:.2f}s"

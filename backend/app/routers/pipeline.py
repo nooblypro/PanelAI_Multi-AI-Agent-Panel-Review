@@ -159,8 +159,12 @@ async def independent_review(profile: CandidateProfile) -> dict:
     Request body: CandidateProfile (JSON, camelCase).
     Response: { opinions: AgentOpinion[], warnings?: string[] }
     """
+    import time
+    t0 = time.perf_counter()
     try:
         opinions, warnings = await run_independent_reviews(profile)
+        elapsed_ms = int((time.perf_counter() - t0) * 1000)
+        logger.info("[PIPELINE] independent_agents_ms=%d", elapsed_ms)
     except Exception as exc:
         logger.exception("Independent review failed")
         raise HTTPException(
@@ -180,9 +184,13 @@ async def independent_review(profile: CandidateProfile) -> dict:
 @router.post("/independent-review/{agent_id}")
 async def independent_review_single(agent_id: str, profile: CandidateProfile) -> dict:
     """Run a single agent evaluation. Used for frontend progress tracking."""
+    import time
+    t0 = time.perf_counter()
     from app.services.independent_review import _run_single_agent
     try:
         opinion, warnings = await _run_single_agent(agent_id, profile)
+        elapsed_ms = int((time.perf_counter() - t0) * 1000)
+        logger.info("[PIPELINE] single_agent_%s_ms=%d", agent_id, elapsed_ms)
     except Exception as exc:
         logger.exception("Single agent review failed: %s", agent_id)
         raise HTTPException(
@@ -210,8 +218,12 @@ async def debate(request: DebateRequest) -> dict:
     Request body: { profile: CandidateProfile, opinions: AgentOpinion[] }
     Response: { debateTurns: DebateTurn[], warnings?: string[] }
     """
+    import time
+    t0 = time.perf_counter()
     try:
         turns, warnings = await run_debate(request.profile, request.opinions)
+        elapsed_ms = int((time.perf_counter() - t0) * 1000)
+        logger.info("[PIPELINE] debate_ms=%d", elapsed_ms)
     except Exception as exc:
         logger.exception("Debate generation failed")
         raise HTTPException(
@@ -240,10 +252,14 @@ async def synthesize(request: SynthesizeRequest) -> dict:
     Request body: { profile, opinions, debateTurns }
     Response: { decision: FinalDecision, warnings?: string[] }
     """
+    import time
+    t0 = time.perf_counter()
     try:
         decision, warnings = await synthesize_decision(
             request.profile, request.opinions, request.debate_turns
         )
+        elapsed_ms = int((time.perf_counter() - t0) * 1000)
+        logger.info("[PIPELINE] synthesis_ms=%d", elapsed_ms)
     except Exception as exc:
         logger.exception("Synthesis failed")
         raise HTTPException(

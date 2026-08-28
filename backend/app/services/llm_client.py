@@ -50,6 +50,32 @@ def _get_gemini_client():
 
 
 # ---------------------------------------------------------------------------
+# HTTP Client Singleton (Connection Pooling & Reuse)
+# ---------------------------------------------------------------------------
+
+_http_client: Optional[httpx.AsyncClient] = None
+
+
+def get_http_client() -> httpx.AsyncClient:
+    """Return or initialize the shared persistent async HTTP client."""
+    global _http_client
+    if _http_client is None or _http_client.is_closed:
+        _http_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(22.0, connect=5.0),
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
+        )
+    return _http_client
+
+
+async def close_http_client():
+    """Close the shared async HTTP client gracefully on shutdown."""
+    global _http_client
+    if _http_client is not None and not _http_client.is_closed:
+        await _http_client.aclose()
+        _http_client = None
+
+
+# ---------------------------------------------------------------------------
 # Public Entry Point
 # ---------------------------------------------------------------------------
 
@@ -84,26 +110,55 @@ async def generate_json(
     LLMError
         If the call fails after retries or the output is unparseable.
     """
+    import time
+
     provider = settings.llm_provider.lower()
     label = f"{stage}/{agent_id}" if agent_id else stage
+    start_t = time.perf_counter()
 
-    if provider == "openrouter":
-        return await _generate_openrouter_json(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            label=label,
+    try:
+        if provider == "openrouter":
+            result = await _generate_openrouter_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                label=label,
+                stage=stage,
+                agent_id=agent_id,
+            )
+        elif provider == "gemini":
+            result = await _generate_gemini_json(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                label=label,
+                stage=stage,
+                agent_id=agent_id,
+            )
+        else:
+            raise LLMError(
+                f"[{label}] Unsupported LLM_PROVIDER: '{settings.llm_provider}'. "
+                "Supported providers: 'openrouter', 'gemini'."
+            )
+
+        latency_ms = int((time.perf_counter() - start_t) * 1000)
+        logger.info(
+            "[LLM] stage=%s agent=%s latency_ms=%d model=%s",
+            stage,
+            agent_id or "none",
+            latency_ms,
+            settings.get_model(),
         )
-    elif provider == "gemini":
-        return await _generate_gemini_json(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            label=label,
+        return result
+
+    except Exception as exc:
+        latency_ms = int((time.perf_counter() - start_t) * 1000)
+        logger.warning(
+            "[LLM] stage=%s agent=%s latency_ms=%d error=%s",
+            stage,
+            agent_id or "none",
+            latency_ms,
+            str(exc)[:120],
         )
-    else:
-        raise LLMError(
-            f"[{label}] Unsupported LLM_PROVIDER: '{settings.llm_provider}'. "
-            "Supported providers: 'openrouter', 'gemini'."
-        )
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -116,8 +171,10 @@ async def _generate_openrouter_json(
     system_prompt: str,
     user_prompt: str,
     label: str,
+    stage: str,
+    agent_id: Optional[str] = None,
 ) -> dict[str, Any] | list[Any]:
-    """Call OpenRouter chat completions API using httpx."""
+    """Call OpenRouter chat completions API using persistent httpx client."""
     api_key = settings.openrouter_api_key
     if not api_key:
         raise LLMError(
@@ -134,6 +191,8 @@ async def _generate_openrouter_json(
         "HTTP-Referer": "https://github.com/promptwars/panelai",
         "X-Title": "PanelAI",
     }
+
+    http_client = get_http_client()
 
     for attempt in range(1, 3):  # max 2 attempts
         temperature = 0.7 if attempt == 1 else 0.4
@@ -155,8 +214,7 @@ async def _generate_openrouter_json(
                 temperature,
             )
 
-            async with httpx.AsyncClient(timeout=90.0) as http_client:
-                response = await http_client.post(url, headers=headers, json=payload)
+            response = await http_client.post(url, headers=headers, json=payload)
 
             if response.status_code != 200:
                 error_detail = response.text[:400]
@@ -179,14 +237,23 @@ async def _generate_openrouter_json(
             logger.info("[%s] success — parsed %s", label, type(parsed).__name__)
             return parsed
 
+        except httpx.TimeoutException as exc:
+            logger.warning("[%s] request timed out (22s limit): %s", label, exc)
+            raise LLMError(f"[{label}] request timed out after 22s") from exc
+
         except LLMError as exc:
             if attempt == 2 or "Deterministic error:" in str(exc):
                 raise
-            logger.warning("[%s] attempt %d failed, retrying", label, attempt)
+            logger.warning("[%s] attempt %d failed, retrying: %s", label, attempt, exc)
+            import asyncio
+            await asyncio.sleep(0.5)
+
         except Exception as exc:
             if attempt == 2:
                 raise LLMError(f"[{label}] OpenRouter call failed: {exc}") from exc
             logger.warning("[%s] attempt %d error: %s — retrying", label, attempt, exc)
+            import asyncio
+            await asyncio.sleep(0.5)
 
     raise LLMError(f"[{label}] exhausted retries")
 
@@ -201,6 +268,8 @@ async def _generate_gemini_json(
     system_prompt: str,
     user_prompt: str,
     label: str,
+    stage: str,
+    agent_id: Optional[str] = None,
 ) -> dict[str, Any] | list[Any]:
     """Call Google Gemini API using google-genai SDK."""
     from google.genai import types as genai_types
@@ -240,10 +309,14 @@ async def _generate_gemini_json(
             if attempt == 2:
                 raise
             logger.warning("[%s] attempt %d failed, retrying", label, attempt)
+            import asyncio
+            await asyncio.sleep(0.5)
         except Exception as exc:
             if attempt == 2:
                 raise LLMError(f"[{label}] Gemini call failed: {exc}") from exc
             logger.warning("[%s] attempt %d error: %s — retrying", label, attempt, exc)
+            import asyncio
+            await asyncio.sleep(0.5)
 
     raise LLMError(f"[{label}] exhausted retries")
 
