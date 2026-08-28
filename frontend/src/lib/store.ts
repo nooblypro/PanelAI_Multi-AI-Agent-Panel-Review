@@ -69,9 +69,13 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
       opinions: [],
     });
 
-    const opinions = await runIndependentReview(profile);
+    const opinions = await runIndependentReview(profile, (agentId) => {
+      set((state) => ({
+        agentProgress: { ...state.agentProgress, [agentId]: true }
+      }));
+    });
 
-    // Mark all agents done, then set opinions
+    // Finalize
     set({
       agentProgress: { technical: true, culture: true, hiring_manager: true, skeptic: true },
       opinions,

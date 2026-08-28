@@ -160,9 +160,11 @@ async def _generate_openrouter_json(
 
             if response.status_code != 200:
                 error_detail = response.text[:400]
-                raise LLMError(
-                    f"[{label}] OpenRouter returned HTTP {response.status_code}: {error_detail}"
-                )
+                error_msg = f"[{label}] OpenRouter returned HTTP {response.status_code}: {error_detail}"
+                if response.status_code in (400, 401, 403, 404, 413, 422):
+                    # Deterministic failure, do not retry
+                    raise LLMError(f"Deterministic error: {error_msg}")
+                raise LLMError(error_msg)
 
             data = response.json()
             choices = data.get("choices")
@@ -177,8 +179,8 @@ async def _generate_openrouter_json(
             logger.info("[%s] success — parsed %s", label, type(parsed).__name__)
             return parsed
 
-        except LLMError:
-            if attempt == 2:
+        except LLMError as exc:
+            if attempt == 2 or "Deterministic error:" in str(exc):
                 raise
             logger.warning("[%s] attempt %d failed, retrying", label, attempt)
         except Exception as exc:

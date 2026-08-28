@@ -56,26 +56,38 @@ export async function buildCandidateProfile(params: {
  * The backend enforces full agent independence — each agent sees
  * only the profile and its own persona prompt, never another agent's output.
  */
-export async function runIndependentReview(profile: CandidateProfile): Promise<AgentOpinion[]> {
-  const res = await fetch(`${API_BASE}/api/independent-review`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(profile),
+export async function runIndependentReview(
+  profile: CandidateProfile,
+  onProgress?: (agentId: string) => void
+): Promise<AgentOpinion[]> {
+  const agents = ['technical', 'culture', 'hiring_manager', 'skeptic'];
+  
+  const promises = agents.map(async (agentId) => {
+    const res = await fetch(`${API_BASE}/api/independent-review/${agentId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    });
+
+    if (!res.ok) {
+      let detail = 'Unknown error';
+      try {
+        const errJson = await res.json();
+        detail = errJson.detail || JSON.stringify(errJson);
+      } catch {
+        detail = await res.text().catch(() => 'Unknown error');
+      }
+      throw new Error(`Independent review for ${agentId} failed (${res.status}): ${detail}`);
+    }
+
+    const data = await res.json();
+    if (onProgress) {
+      onProgress(agentId);
+    }
+    return data.opinion;
   });
 
-  if (!res.ok) {
-    let detail = 'Unknown error';
-    try {
-      const errJson = await res.json();
-      detail = errJson.detail || JSON.stringify(errJson);
-    } catch {
-      detail = await res.text().catch(() => 'Unknown error');
-    }
-    throw new Error(`Independent review failed (${res.status}): ${detail}`);
-  }
-
-  const data = await res.json();
-  return data.opinions;
+  return Promise.all(promises);
 }
 
 /**

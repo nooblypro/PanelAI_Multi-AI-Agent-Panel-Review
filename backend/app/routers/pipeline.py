@@ -177,6 +177,27 @@ async def independent_review(profile: CandidateProfile) -> dict:
     return result
 
 
+@router.post("/independent-review/{agent_id}")
+async def independent_review_single(agent_id: str, profile: CandidateProfile) -> dict:
+    """Run a single agent evaluation. Used for frontend progress tracking."""
+    from app.services.independent_review import _run_single_agent
+    try:
+        opinion, warnings = await _run_single_agent(agent_id, profile)
+    except Exception as exc:
+        logger.exception("Single agent review failed: %s", agent_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Agent {agent_id} failed: {exc}",
+        ) from exc
+
+    result: dict = {
+        "opinion": opinion.model_dump(by_alias=True),
+    }
+    if warnings:
+        result["warnings"] = warnings
+    return result
+
+
 # ---------------------------------------------------------------------------
 # 2. Debate
 # ---------------------------------------------------------------------------

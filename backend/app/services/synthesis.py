@@ -52,9 +52,11 @@ async def synthesize_decision(
     """
     warnings: list[str] = []
 
-    profile_json = json.dumps(
-        profile.model_dump(by_alias=True), indent=2
-    )
+    profile_dump = profile.model_dump(by_alias=True)
+    profile_dump.pop("resumeText", None)
+    profile_dump.pop("transcriptText", None)
+    
+    profile_json = json.dumps(profile_dump, indent=2)
     opinions_json = json.dumps(
         [op.model_dump(by_alias=True) for op in opinions], indent=2
     )

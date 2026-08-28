@@ -148,11 +148,23 @@ export function DebateThread() {
 
   const [playing, setPlaying] = useState(false);
   const [speakingIdx, setSpeakingIdx] = useState(-1);
+  const [loadingRound, setLoadingRound] = useState(1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const allRevealed = revealedTurns >= debateTurns.length && debateTurns.length > 0;
   const isLoading = debateStatus === 'running' && debateTurns.length === 0;
+
+  // Fake loading progress for debate to avoid static spinning wheel
+  useEffect(() => {
+    if (isLoading) {
+      setLoadingRound(1);
+      const timer = setInterval(() => {
+        setLoadingRound((r) => (r < 10 ? r + 1 : r));
+      }, 5000); // Increment fake round every 5 seconds
+      return () => clearInterval(timer);
+    }
+  }, [isLoading]);
 
   const play = useCallback(() => {
     if (allRevealed) return;
@@ -252,7 +264,7 @@ export function DebateThread() {
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
             <Loader2 size={28} className="animate-spin text-accent-technical" />
-            <p className="text-[13px] text-muted">Agents are preparing their debate positions…</p>
+            <p className="text-[13px] text-muted">Agents are deliberating (Round {loadingRound})…</p>
           </div>
         </div>
       )}
