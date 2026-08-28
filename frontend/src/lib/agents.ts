@@ -100,10 +100,12 @@ export async function runDebate(
   profile: CandidateProfile,
   opinions: AgentOpinion[]
 ): Promise<DebateTurn[]> {
+  // OPTIMIZATION: Do not send large raw text to debate since it's popped on the server anyway.
+  const { resumeText, transcriptText, ...profileWithoutRaw } = profile;
   const res = await fetch(`${API_BASE}/api/debate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ profile, opinions }),
+    body: JSON.stringify({ profile: profileWithoutRaw, opinions }),
   });
 
   if (!res.ok) {
@@ -131,10 +133,12 @@ export async function synthesizeDecision(
   opinions: AgentOpinion[],
   debateTurns: DebateTurn[]
 ): Promise<FinalDecision> {
+  // OPTIMIZATION: Do not send large raw text to synthesis since it's popped on the server anyway.
+  const { resumeText, transcriptText, ...profileWithoutRaw } = profile;
   const res = await fetch(`${API_BASE}/api/synthesize`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ profile, opinions, debateTurns }),
+    body: JSON.stringify({ profile: profileWithoutRaw, opinions, debateTurns }),
   });
 
   if (!res.ok) {

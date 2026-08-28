@@ -218,7 +218,7 @@ async def _generate_gemini_json(
                 model,
             )
 
-            response = client.models.generate_content(
+            response = await client.aio.models.generate_content(
                 model=model,
                 contents=user_prompt,
                 config=genai_types.GenerateContentConfig(

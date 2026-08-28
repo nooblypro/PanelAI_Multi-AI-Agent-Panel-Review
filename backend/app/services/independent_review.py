@@ -137,6 +137,8 @@ async def _run_single_agent(
 def _build_user_prompt(profile: CandidateProfile) -> str:
     """Build the user message for an independent evaluation."""
     profile_data = profile.model_dump(by_alias=True)
+    profile_data.pop("resumeText", None)
+    profile_data.pop("transcriptText", None)
     return f"""Evaluate this candidate for the target role below.
 
 <candidate_target_role>

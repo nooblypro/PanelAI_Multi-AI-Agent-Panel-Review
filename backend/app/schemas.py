@@ -72,8 +72,8 @@ class CandidateProfile(BaseModel):
     id: str
     name: str
     target_role: str = Field(alias="targetRole")
-    resume_text: str = Field(alias="resumeText")
-    transcript_text: str = Field(alias="transcriptText")
+    resume_text: str = Field(default="", alias="resumeText")
+    transcript_text: str = Field(default="", alias="transcriptText")
     skills: list[Skill]
     experience: list[Experience]
     education: list[Education]
