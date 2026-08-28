@@ -82,25 +82,31 @@ export async function runIndependentReview(
   const results = await Promise.all(
     agents.map(async (agentId) => {
       let errorDetail = '';
-      // Primary: Call single agent endpoint for live parallel progression
-      try {
-        const res = await fetch(`${API_BASE}/api/independent-review/${agentId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(profile),
-        });
 
-        if (res.ok) {
-          const data = await res.json();
-          if (data.opinion) {
-            if (onProgress) onProgress(agentId, { success: true, opinion: data.opinion });
-            return { success: true, opinion: data.opinion as AgentOpinion };
+      // Primary: Call single agent endpoint (with 1 retry for cold start resilience)
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const res = await fetch(`${API_BASE}/api/independent-review/${agentId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profile),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.opinion) {
+              if (onProgress) onProgress(agentId, { success: true, opinion: data.opinion });
+              return { success: true, opinion: data.opinion as AgentOpinion };
+            }
+          }
+          errorDetail = `HTTP ${res.status}: ${await res.text().catch(() => '')}`;
+        } catch (e: any) {
+          errorDetail = e?.message || 'Network request failed';
+          console.warn(`Single agent review fetch attempt ${attempt} failed for ${agentId}:`, e);
+          if (attempt === 1) {
+            await new Promise((r) => setTimeout(r, 800));
           }
         }
-        errorDetail = `HTTP ${res.status}: ${await res.text().catch(() => '')}`;
-      } catch (e: any) {
-        errorDetail = e?.message || 'Network request failed';
-        console.warn(`Single agent review fetch failed for ${agentId}:`, e);
       }
 
       // Secondary fallback: Try batch endpoint
@@ -123,7 +129,7 @@ export async function runIndependentReview(
       }
 
       // If backend attempts failed, fail cleanly so user is notified instead of silent fabrication
-      const errMsg = `Agent ${agentId} review failed (${errorDetail || 'backend unavailable'}). Please check backend connection and CORS configuration.`;
+      const errMsg = `Agent ${agentId} review failed (${errorDetail || 'backend unavailable'}). Please check backend connection (${API_BASE}) and CORS configuration.`;
       if (onProgress) onProgress(agentId, { success: false, error: errMsg });
       return { success: false, error: errMsg };
     })

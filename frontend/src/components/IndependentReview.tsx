@@ -209,7 +209,11 @@ export function IndependentReview() {
             <AlertCircle size={18} className="flex-shrink-0" />
             <div>
               <p className="text-[13px] font-semibold">Evaluation Interrupted</p>
-              <p className="text-[12px] opacity-90">{reviewError || 'A connection issue occurred during agent review.'}</p>
+              <p className="text-[12px] opacity-90">
+                {reviewError && reviewError.includes('Failed to fetch')
+                  ? 'Unable to connect to the backend server. Please verify your backend deployment URL and CORS settings.'
+                  : reviewError || 'A connection issue occurred during agent review.'}
+              </p>
             </div>
           </div>
           <button
