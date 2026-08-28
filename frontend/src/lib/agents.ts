@@ -4,6 +4,52 @@ import type { AgentOpinion, CandidateProfile, DebateTurn, FinalDecision } from '
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 /**
+ * Build a structured CandidateProfile from files and/or text inputs.
+ *
+ * Calls POST /api/build-profile with multipart/form-data.
+ * The backend extracts text from .pdf, .docx, or .txt files,
+ * resolves precedence (pasted text > file text), and constructs
+ * the structured fact base.
+ */
+export async function buildCandidateProfile(params: {
+  targetRoleText?: string;
+  targetRoleFile?: File | null;
+  resumeText?: string;
+  resumeFile?: File | null;
+  transcriptText?: string;
+  transcriptFile?: File | null;
+  candidateName?: string;
+}): Promise<CandidateProfile> {
+  const formData = new FormData();
+  if (params.targetRoleText) formData.append('targetRoleText', params.targetRoleText);
+  if (params.targetRoleFile) formData.append('targetRoleFile', params.targetRoleFile);
+  if (params.resumeText) formData.append('resumeText', params.resumeText);
+  if (params.resumeFile) formData.append('resumeFile', params.resumeFile);
+  if (params.transcriptText) formData.append('transcriptText', params.transcriptText);
+  if (params.transcriptFile) formData.append('transcriptFile', params.transcriptFile);
+  if (params.candidateName) formData.append('candidateName', params.candidateName);
+
+  const res = await fetch(`${API_BASE}/api/build-profile`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    let detail = 'Unknown error';
+    try {
+      const errJson = await res.json();
+      detail = errJson.detail || JSON.stringify(errJson);
+    } catch {
+      detail = await res.text().catch(() => 'Unknown error');
+    }
+    throw new Error(`Profile building failed (${res.status}): ${detail}`);
+  }
+
+  const data = await res.json();
+  return data.profile;
+}
+
+/**
  * Run 4 independent AI agent evaluations in parallel.
  *
  * Calls POST /api/independent-review with the candidate profile.
@@ -18,7 +64,13 @@ export async function runIndependentReview(profile: CandidateProfile): Promise<A
   });
 
   if (!res.ok) {
-    const detail = await res.text().catch(() => 'Unknown error');
+    let detail = 'Unknown error';
+    try {
+      const errJson = await res.json();
+      detail = errJson.detail || JSON.stringify(errJson);
+    } catch {
+      detail = await res.text().catch(() => 'Unknown error');
+    }
     throw new Error(`Independent review failed (${res.status}): ${detail}`);
   }
 
@@ -43,7 +95,13 @@ export async function runDebate(
   });
 
   if (!res.ok) {
-    const detail = await res.text().catch(() => 'Unknown error');
+    let detail = 'Unknown error';
+    try {
+      const errJson = await res.json();
+      detail = errJson.detail || JSON.stringify(errJson);
+    } catch {
+      detail = await res.text().catch(() => 'Unknown error');
+    }
     throw new Error(`Debate generation failed (${res.status}): ${detail}`);
   }
 
@@ -68,7 +126,13 @@ export async function synthesizeDecision(
   });
 
   if (!res.ok) {
-    const detail = await res.text().catch(() => 'Unknown error');
+    let detail = 'Unknown error';
+    try {
+      const errJson = await res.json();
+      detail = errJson.detail || JSON.stringify(errJson);
+    } catch {
+      detail = await res.text().catch(() => 'Unknown error');
+    }
     throw new Error(`Synthesis failed (${res.status}): ${detail}`);
   }
 

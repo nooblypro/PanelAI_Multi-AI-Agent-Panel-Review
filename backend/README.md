@@ -39,36 +39,44 @@ If no API key is provided, the backend logs the missing key and automatically ac
 
 ---
 
-## 2. Security
+## 2. File & Text Input Precedence Rule
+
+When both an uploaded file (`.pdf`, `.docx`, `.txt`) and pasted text are provided for the same field (Target Role, Resume, or Interview Transcript):
+- **Pasted text is the preferred source of truth** and is used for evaluation.
+- The file content is discarded for that field rather than concatenated, avoiding duplicate or conflicting statements.
+
+---
+
+## 3. Security
 
 All LLM API keys (`OPENROUTER_API_KEY`, `GEMINI_API_KEY`) remain strictly on the backend and are never exposed to the frontend. The `.env` file is excluded from Git via `.gitignore`.
 
 ---
 
-## 3. Local Setup & Running
+## 4. Local Setup & Running
 
-### 3.1 Install Dependencies
+### 4.1 Install Dependencies
 ```bash
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"  # or pip install fastapi "uvicorn[standard]" pydantic pydantic-settings google-genai httpx pytest pytest-asyncio
+pip install -e ".[dev]"  # installs fastapi, uvicorn, pydantic, google-genai, httpx, pypdf, python-docx, python-multipart
 ```
 
-### 3.2 Run the Server
+### 4.2 Run the Server
 ```bash
 source .venv/bin/activate
 uvicorn app.main:app --reload --port 8000
 ```
 Check health: `http://localhost:8000/health`
 
-### 3.3 Run Tests
+### 4.3 Run Tests
 ```bash
 source .venv/bin/activate
 python -m pytest tests/ -v
 ```
 
-### 3.4 Run Local Smoke Test
+### 4.4 Run Local Smoke Test
 ```bash
 source .venv/bin/activate
 python smoke_test.py
@@ -76,11 +84,12 @@ python smoke_test.py
 
 ---
 
-## 4. Endpoints & Pipeline Flow
+## 5. Endpoints & Pipeline Flow
 
 | Method | Path | Request Body | Response Body | Stage Description |
 |---|---|---|---|---|
 | `GET` | `/health` | None | `{"status": "ok", "provider": str, "model": str, "has_api_key": bool}` | Health & provider readiness probe |
+| `POST` | `/api/build-profile` | `multipart/form-data` with optional `targetRoleText`, `targetRoleFile`, `resumeText`, `resumeFile`, `transcriptText`, `transcriptFile`, `candidateName` | `{"profile": CandidateProfile}` | Normalizes `.pdf`, `.docx`, `.txt` and applies precedence rules |
 | `POST` | `/api/independent-review` | `CandidateProfile` | `{"opinions": AgentOpinion[], "warnings"?: string[]}` | Runs 4 isolated agents in parallel (`asyncio.gather`) |
 | `POST` | `/api/debate` | `{"profile": CandidateProfile, "opinions": AgentOpinion[]}` | `{"debateTurns": DebateTurn[], "warnings"?: string[]}` | Multi-turn debate cross-referencing statements |
 | `POST` | `/api/synthesize` | `{"profile": CandidateProfile, "opinions": AgentOpinion[], "debateTurns": DebateTurn[]}` | `{"decision": FinalDecision, "warnings"?: string[]}` | Weighted synthesis with strengths, concerns & disagreements |

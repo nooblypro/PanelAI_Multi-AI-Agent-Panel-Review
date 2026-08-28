@@ -52,5 +52,21 @@ class Settings(BaseSettings):
             return self.llm_model
         return self.llm_model
 
+    def get_cors_origins(self) -> list[str]:
+        """Return list of allowed CORS origins, including dev defaults."""
+        defaults = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ]
+        origins = list(self.cors_origins) if isinstance(self.cors_origins, list) else [str(self.cors_origins)]
+        for d in defaults:
+            if d not in origins:
+                origins.append(d)
+        return origins
+
 
 settings = Settings()

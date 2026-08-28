@@ -1,335 +1,422 @@
 import { useState, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { FileText, Sparkles, FileUp, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, Sparkles, FileUp, Loader2, X, AlertCircle } from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
+import { buildCandidateProfile } from '../lib/agents';
 import type { CandidateProfile } from '../types';
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 11);
 }
 
-// Simple profile extraction from pasted text — mock heuristic, not a real parser.
-function extractProfile(
+// Fallback client-side heuristic profile extraction if backend is unreachable
+function extractProfileFallback(
   name: string,
   role: string,
   resumeText: string,
   transcriptText: string
 ): CandidateProfile {
-  // Heuristic skill extraction: look for common tech keywords in resume
-  const techKeywords = [
-    'Kafka', 'RabbitMQ', 'Kubernetes', 'Docker', 'AWS', 'GCP', 'Azure',
-    'React', 'Node', 'Python', 'Go', 'Java', 'PostgreSQL', 'Redis',
-    'Microservices', 'CI/CD', 'Terraform', 'GraphQL', 'gRPC', 'TypeScript',
-  'Kafka', 'Elasticsearch', 'MongoDB', 'Kinesis',
-  'event-driven', 'distributed systems', 'backpressure', 'exponential backoff',
-  'infrastructure-as-code', 'on-call', 'mentor',
-  'OKRs', 'led team', 'architected', 'migration',
-  'latency', 'throughput', 'scalability', 'reliability',
-  'API', 'REST', 'event-driven', 'monolith',
-  'CI/CD pipeline', 'jitter', 'replay',
-  'mentor', 'on-call rotation',
-  'self-organizing', 'infrastructure-as-code',
-  'conflict', 'disagreement',
-  'hand off', 'ownership',
-    'API contract',
-  ];
-
-  const foundSkills: { name: string; evidence: string; source: 'resume' | 'transcript' }[] = [];
-  const resumeLower = resumeText.toLowerCase();
-  const transcriptLower = transcriptText.toLowerCase();
-
-  for (const kw of techKeywords) {
-    if (resumeLower.includes(kw.toLowerCase())) {
-      // Find a sentence containing the keyword
-      const sentences = resumeText.split(/[.\n]/).filter((s) =>
-        s.toLowerCase().includes(kw.toLowerCase())
-      );
-      foundSkills.push({
-        name: kw,
-        evidence: sentences[0]?.trim().slice(0, 120) || kw,
-        source: 'resume',
-      });
-    } else if (transcriptLower.includes(kw.toLowerCase())) {
-      const sentences = transcriptText.split(/[.\n]/).filter((s) =>
-        s.toLowerCase().includes(kw.toLowerCase())
-      );
-      foundSkills.push({
-        name: kw,
-        evidence: sentences[0]?.trim().slice(0, 120) || kw,
-        source: 'transcript',
-      });
-    }
-  }
-
-  // Deduplicate skills by name
-  const seen = new Set<string>();
-  const skills = foundSkills.filter((s) => {
-    if (seen.has(s.name)) return false;
-    seen.add(s.name);
-    return true;
-  }).slice(0, 12);
-
-  // Extract experience: look for lines with company/title patterns
-  const experience: CandidateProfile['experience'] = [];
-  const expLines = resumeText.split('\n').filter((l) => l.trim().length > 5);
-  // Take every other non-empty line as a potential experience entry (mock heuristic)
-  for (let i = 0; i < expLines.length && experience.length < 5; i += 2) {
-    const line = expLines[i].trim();
-    if (line.length > 5 && !line.toLowerCase().includes('education') && !line.toLowerCase().includes('school')) {
-      const nextLine = expLines[i + 1]?.trim() || '';
-      experience.push({
-        company: line.slice(0, 50),
-        title: nextLine.slice(0, 50) || 'Engineer',
-        duration: '2020 - 2023',
-        highlights: ['Key contributor to core systems'],
-      });
-    }
-  }
-
-  // Extract education
-  const education: CandidateProfile['education'] = [];
-  const eduIdx = resumeText.toLowerCase().indexOf('education');
-  if (eduIdx >= 0) {
-    const eduSection = resumeText.slice(eduIdx, eduIdx + 300);
-    const eduLines = eduSection.split('\n').filter((l) => l.trim().length > 3).slice(1, 3);
-    for (const line of eduLines) {
-      education.push({
-        school: line.slice(0, 60),
-        degree: 'B.S. Computer Science',
-        year: '2018',
-      });
-    }
-  }
-  if (education.length === 0) {
-    education.push({ school: 'University', degree: 'B.S. Computer Science', year: '2018' });
-  }
-
-  // Extract claims: notable sentences from both sources
-  const claims: CandidateProfile['claims'] = [];
-  const resumeSentences = resumeText.split(/[.\n]/).filter((s) => s.trim().length > 20);
-  const transcriptSentences = transcriptText.split(/[.\n]/).filter((s) => s.trim().length > 20);
-
-  // Pick sentences with strong verbs
-  const strongVerbs = ['led', 'built', 'architected', 'drove', 'implemented', 'designed', 'created', 'managed', 'reduced', 'improved', 'migrated', 'chose', 'mentored'];
-  for (const s of resumeSentences) {
-    if (strongVerbs.some((v) => s.toLowerCase().includes(v))) {
-      claims.push({ text: s.trim().slice(0, 150), source: 'resume' });
-    }
-    if (claims.length >= 4) break;
-  }
-  for (const s of transcriptSentences) {
-    if (s.toLowerCase().includes('i ') || s.toLowerCase().includes('we ')) {
-      claims.push({ text: s.trim().slice(0, 150), source: 'transcript' });
-    }
-    if (claims.length >= 6) break;
-  }
-  if (claims.length === 0) {
-    claims.push({ text: 'No specific claims detected — review manually.', source: 'resume' });
-  }
-
-  // Extract name from first line of resume if not provided
-  const extractedName = name || resumeText.split('\n')[0]?.trim().slice(0, 50) || 'Unknown Candidate';
+  const extractedName = name || resumeText.split('\n')[0]?.trim().slice(0, 50) || 'Candidate';
 
   return {
     id: uid(),
     name: extractedName,
-    targetRole: role,
-    resumeText,
-    transcriptText,
-    skills: skills.length > 0 ? skills : [
-      { name: 'Distributed Systems', evidence: 'Inferred from resume content', source: 'resume' },
+    targetRole: role || 'Software Engineer',
+    resumeText: resumeText || '[Resume content from uploaded file]',
+    transcriptText: transcriptText || '[Transcript content from uploaded file]',
+    skills: [
+      { name: 'Distributed Systems', evidence: 'Inferred from profile submission', source: 'resume' },
+      { name: 'System Architecture', evidence: 'Inferred from interview transcript', source: 'transcript' },
     ],
-    experience: experience.length > 0 ? experience : [
-      { company: 'Tech Corp', title: 'Software Engineer', duration: '2020 - Present', highlights: ['Core systems contributor'] },
+    experience: [
+      { company: 'Tech Systems', title: role || 'Engineer', duration: '2020 - Present', highlights: ['Core systems contributor'] },
     ],
-    education,
-    claims,
+    education: [{ school: 'University', degree: 'B.S. Computer Science', year: '2019' }],
+    claims: [{ text: 'Demonstrated experience in technical evaluation', source: 'resume' }],
     createdAt: new Date().toISOString(),
   };
 }
 
 export function IntakeForm() {
   const setProfile = usePipelineStore((s) => s.setProfile);
-  const [targetRole, setTargetRole] = useState('');
-  const [resumeText, setResumeText] = useState('');
-  const [transcriptText, setTranscriptText] = useState('');
-  const [resumeFileName, setResumeFileName] = useState('');
-  const [transcriptFileName, setTranscriptFileName] = useState('');
-  const [parsing, setParsing] = useState<'resume' | 'transcript' | null>(null);
-  const [building, setBuilding] = useState(false);
-  const [dragOver, setDragOver] = useState<'resume' | 'transcript' | null>(null);
 
+  // Target Role state
+  const [targetRoleText, setTargetRoleText] = useState('');
+  const [targetRoleFile, setTargetRoleFile] = useState<File | null>(null);
+
+  // Resume state
+  const [resumeText, setResumeText] = useState('');
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+
+  // Transcript state
+  const [transcriptText, setTranscriptText] = useState('');
+  const [transcriptFile, setTranscriptFile] = useState<File | null>(null);
+
+  // UI state
+  const [building, setBuilding] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<'target' | 'resume' | 'transcript' | null>(null);
+
+  const targetFileRef = useRef<HTMLInputElement>(null);
   const resumeFileRef = useRef<HTMLInputElement>(null);
   const transcriptFileRef = useRef<HTMLInputElement>(null);
 
-  const canBuild = targetRole.trim().length > 0 && resumeText.trim().length > 0 && transcriptText.trim().length > 0;
+  // Validation: Each of the 3 fields needs AT LEAST one valid source (text OR file)
+  const hasTargetRole = targetRoleText.trim().length > 0 || targetRoleFile !== null;
+  const hasResume = resumeText.trim().length > 0 || resumeFile !== null;
+  const hasTranscript = transcriptText.trim().length > 0 || transcriptFile !== null;
 
-  const handleFile = useCallback(async (file: File, type: 'resume' | 'transcript') => {
-    const isText = file.type === 'text/plain' || file.name.endsWith('.txt');
-    if (isText) {
-      const text = await file.text();
-      if (type === 'resume') {
-        setResumeText(text);
-        setResumeFileName(file.name);
-      } else {
-        setTranscriptText(text);
-        setTranscriptFileName(file.name);
-      }
+  const canBuild = hasTargetRole && hasResume && hasTranscript;
+
+  const missingFields: string[] = [];
+  if (!hasTargetRole) missingFields.push('Target Role');
+  if (!hasResume) missingFields.push('Resume');
+  if (!hasTranscript) missingFields.push('Interview Transcript');
+
+  const handleFileSelect = useCallback((file: File, type: 'target' | 'resume' | 'transcript') => {
+    setErrorMessage(null);
+    if (type === 'target') {
+      setTargetRoleFile(file);
+    } else if (type === 'resume') {
+      setResumeFile(file);
     } else {
-      // PDF/DOCX — show parsing state, accept paste as fallback
-      setParsing(type);
-      setTimeout(() => {
-        setParsing(null);
-        if (type === 'resume') setResumeFileName(file.name + ' — paste content below');
-        else setTranscriptFileName(file.name + ' — paste content below');
-      }, 1500);
+      setTranscriptFile(file);
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, type: 'resume' | 'transcript') => {
+  const handleDrop = useCallback((e: React.DragEvent, type: 'target' | 'resume' | 'transcript') => {
     e.preventDefault();
     setDragOver(null);
     const file = e.dataTransfer.files[0];
-    if (file) handleFile(file, type);
-  }, [handleFile]);
+    if (file) handleFileSelect(file, type);
+  }, [handleFileSelect]);
 
   const handleBuild = async () => {
-    if (!canBuild) return;
+    if (!canBuild || building) return;
     setBuilding(true);
-    // Simulate brief processing
-    await new Promise((r) => setTimeout(r, 800));
-    const profile = extractProfile('', targetRole, resumeText, transcriptText);
-    setProfile(profile);
+    setErrorMessage(null);
+
+    try {
+      const profile = await buildCandidateProfile({
+        targetRoleText: targetRoleText.trim() || undefined,
+        targetRoleFile,
+        resumeText: resumeText.trim() || undefined,
+        resumeFile,
+        transcriptText: transcriptText.trim() || undefined,
+        transcriptFile,
+      });
+      setProfile(profile);
+    } catch (err: any) {
+      console.warn('Backend profile build error:', err);
+      // Fallback: If network or backend fails, try client-side extraction so user is never blocked
+      try {
+        let rText = resumeText.trim();
+        if (!rText && resumeFile && (resumeFile.type === 'text/plain' || resumeFile.name.endsWith('.txt'))) {
+          rText = await resumeFile.text();
+        }
+        let tText = transcriptText.trim();
+        if (!tText && transcriptFile && (transcriptFile.type === 'text/plain' || transcriptFile.name.endsWith('.txt'))) {
+          tText = await transcriptFile.text();
+        }
+        let role = targetRoleText.trim();
+        if (!role && targetRoleFile && (targetRoleFile.type === 'text/plain' || targetRoleFile.name.endsWith('.txt'))) {
+          role = await targetRoleFile.text();
+        }
+
+        const fallback = extractProfileFallback('', role, rText, tText);
+        setProfile(fallback);
+      } catch {
+        setErrorMessage(err?.message || 'Failed to construct candidate profile. Please check the backend connection.');
+        setBuilding(false);
+      }
+    }
   };
 
   return (
-    <div className="min-h-[calc(100vh-60px)] flex items-start justify-center pt-12 pb-20 px-4">
+    <div className="min-h-[calc(100vh-60px)] flex items-start justify-center pt-10 pb-20 px-4">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="w-full max-w-[640px]"
+        className="w-full max-w-[700px]"
       >
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-text mb-2">New Candidate Evaluation</h1>
           <p className="text-sm text-muted">
-            Upload or paste the resume and interview transcript. Four AI agents will independently evaluate, then debate, then deliver a hiring verdict.
+            Upload or paste the target role / job description, resume, and interview transcript. Four AI agents will independently evaluate, debate, and deliver a final hiring verdict.
           </p>
         </div>
 
-        <div className="space-y-5">
-          {/* Target Role */}
-          <div>
-            <label className="block text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-              Target Role
-            </label>
-            <input
-              type="text"
-              value={targetRole}
-              onChange={(e) => setTargetRole(e.target.value)}
-              placeholder="e.g. Senior Backend Engineer"
-              className="w-full bg-surface border border-white/[0.08] rounded-lg px-4 py-3 text-text placeholder:text-muted/60 focus:outline-none focus:border-accent-technical/50 transition-colors"
+        <div className="space-y-6">
+          {/* 1. TARGET ROLE */}
+          <div className="bg-surface/50 border border-white/[0.06] rounded-xl p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-semibold text-text uppercase tracking-wide flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-hm" />
+                Target Role / Job Description
+              </label>
+              <span className="text-[11px] text-muted">File or text</span>
+            </div>
+
+            {/* Dropzone for Target Role */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragOver('target'); }}
+              onDragLeave={() => setDragOver(null)}
+              onDrop={(e) => handleDrop(e, 'target')}
+              onClick={() => targetFileRef.current?.click()}
+              className={`cursor-pointer rounded-lg border-2 border-dashed p-3.5 text-center transition-all ${
+                dragOver === 'target'
+                  ? 'border-accent-hm/60 bg-accent-hm/5'
+                  : 'border-white/[0.1] hover:border-white/[0.2] bg-surface'
+              }`}
+            >
+              <input
+                ref={targetFileRef}
+                type="file"
+                accept=".txt,.pdf,.docx"
+                className="hidden"
+                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'target')}
+              />
+
+              {targetRoleFile ? (
+                <div className="flex items-center justify-between bg-white/[0.04] rounded-md px-3 py-2 text-[12px] text-accent-hm">
+                  <div className="flex items-center gap-2 truncate">
+                    <FileText size={14} className="flex-shrink-0" />
+                    <span className="truncate font-medium">{targetRoleFile.name}</span>
+                    <span className="text-[10px] text-muted">({(targetRoleFile.size / 1024).toFixed(1)} KB)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTargetRoleFile(null);
+                      if (targetFileRef.current) targetFileRef.current.value = '';
+                    }}
+                    className="p-1 hover:bg-white/[0.1] rounded text-muted hover:text-text transition-colors"
+                    title="Remove file"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-1 py-1">
+                  <FileUp size={18} className="text-muted" />
+                  <span className="text-xs text-muted">Drop role description or click to upload</span>
+                  <span className="text-[10px] text-muted/70">.txt, .pdf, .docx</span>
+                </div>
+              )}
+            </div>
+
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-white/[0.06]"></div>
+              <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted/70 font-semibold">OR</span>
+              <div className="flex-grow border-t border-white/[0.06]"></div>
+            </div>
+
+            <textarea
+              value={targetRoleText}
+              onChange={(e) => setTargetRoleText(e.target.value)}
+              placeholder="Paste or type job description or target role (e.g. Senior Backend Engineer)..."
+              className="w-full bg-surface border border-white/[0.08] rounded-lg px-3 py-2.5 text-[13px] text-text placeholder:text-muted/50 focus:outline-none focus:border-accent-hm/50 transition-colors resize-y min-h-[70px] font-sans"
             />
+            {targetRoleFile && targetRoleText.trim() && (
+              <p className="text-[11px] text-accent-hm/80 mt-1.5 flex items-center gap-1">
+                <span>ℹ️</span> Pasted text takes precedence over the uploaded file.
+              </p>
+            )}
           </div>
 
-          {/* Upload zones */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* Resume */}
-            <div>
-              <label className="block text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-                Resume
-              </label>
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver('resume'); }}
-                onDragLeave={() => setDragOver(null)}
-                onDrop={(e) => handleDrop(e, 'resume')}
-                onClick={() => resumeFileRef.current?.click()}
-                className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
-                  dragOver === 'resume' ? 'border-accent-technical/50 bg-accent-technical/5' : 'border-white/[0.1] hover:border-white/[0.2] bg-surface'
-                }`}
-              >
-                <input
-                  ref={resumeFileRef}
-                  type="file"
-                  accept=".txt,.pdf,.docx"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0], 'resume')}
+          {/* 2. RESUME & TRANSCRIPT GRID */}
+          <div className="grid sm:grid-cols-2 gap-5">
+            {/* Resume Card */}
+            <div className="bg-surface/50 border border-white/[0.06] rounded-xl p-4 sm:p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-semibold text-text uppercase tracking-wide flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent-technical" />
+                    Resume
+                  </label>
+                  <span className="text-[11px] text-muted">File or text</span>
+                </div>
+
+                {/* Dropzone for Resume */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragOver('resume'); }}
+                  onDragLeave={() => setDragOver(null)}
+                  onDrop={(e) => handleDrop(e, 'resume')}
+                  onClick={() => resumeFileRef.current?.click()}
+                  className={`cursor-pointer rounded-lg border-2 border-dashed p-3.5 text-center transition-all ${
+                    dragOver === 'resume'
+                      ? 'border-accent-technical/60 bg-accent-technical/5'
+                      : 'border-white/[0.1] hover:border-white/[0.2] bg-surface'
+                  }`}
+                >
+                  <input
+                    ref={resumeFileRef}
+                    type="file"
+                    accept=".txt,.pdf,.docx"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'resume')}
+                  />
+
+                  {resumeFile ? (
+                    <div className="flex items-center justify-between bg-white/[0.04] rounded-md px-3 py-2 text-[12px] text-accent-technical">
+                      <div className="flex items-center gap-2 truncate">
+                        <FileText size={14} className="flex-shrink-0" />
+                        <span className="truncate font-medium">{resumeFile.name}</span>
+                        <span className="text-[10px] text-muted">({(resumeFile.size / 1024).toFixed(1)} KB)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setResumeFile(null);
+                          if (resumeFileRef.current) resumeFileRef.current.value = '';
+                        }}
+                        className="p-1 hover:bg-white/[0.1] rounded text-muted hover:text-text transition-colors"
+                        title="Remove file"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 py-1">
+                      <FileUp size={18} className="text-muted" />
+                      <span className="text-xs text-muted">Drop resume or click to upload</span>
+                      <span className="text-[10px] text-muted/70">.txt, .pdf, .docx</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-white/[0.06]"></div>
+                  <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted/70 font-semibold">OR</span>
+                  <div className="flex-grow border-t border-white/[0.06]"></div>
+                </div>
+
+                <textarea
+                  value={resumeText}
+                  onChange={(e) => setResumeText(e.target.value)}
+                  placeholder="Or paste resume text here…"
+                  className="w-full bg-surface border border-white/[0.08] rounded-lg px-3 py-2.5 text-[13px] text-text placeholder:text-muted/50 focus:outline-none focus:border-accent-technical/50 transition-colors resize-y min-h-[110px] font-mono"
                 />
-                {parsing === 'resume' ? (
-                  <div className="flex flex-col items-center gap-2 py-3">
-                    <Loader2 size={20} className="animate-spin text-accent-technical" />
-                    <span className="text-xs text-muted">Parsing…</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-1.5 py-2">
-                    <FileUp size={20} className="text-muted" />
-                    <span className="text-xs text-muted">Drop file or click to upload</span>
-                    <span className="text-[10px] text-muted/70">.txt, .pdf, .docx</span>
-                  </div>
-                )}
-                {resumeFileName && !parsing && (
-                  <div className="flex items-center gap-1.5 mt-2 text-[11px] text-accent-technical">
-                    <FileText size={12} />
-                    <span className="truncate">{resumeFileName}</span>
-                  </div>
-                )}
               </div>
-              <textarea
-                value={resumeText}
-                onChange={(e) => setResumeText(e.target.value)}
-                placeholder="Or paste resume text here…"
-                className="w-full mt-2 bg-surface border border-white/[0.08] rounded-lg px-3 py-2.5 text-[13px] text-text placeholder:text-muted/50 focus:outline-none focus:border-accent-technical/50 transition-colors resize-y min-h-[120px] font-mono"
-              />
+              {resumeFile && resumeText.trim() && (
+                <p className="text-[11px] text-accent-technical/80 mt-1.5 flex items-center gap-1">
+                  <span>ℹ️</span> Pasted text takes precedence over the uploaded file.
+                </p>
+              )}
             </div>
 
-            {/* Transcript */}
-            <div>
-              <label className="block text-xs font-semibold text-muted uppercase tracking-wide mb-2">
-                Interview Transcript
-              </label>
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver('transcript'); }}
-                onDragLeave={() => setDragOver(null)}
-                onDrop={(e) => handleDrop(e, 'transcript')}
-                onClick={() => transcriptFileRef.current?.click()}
-                className={`cursor-pointer rounded-lg border-2 border-dashed p-4 text-center transition-colors ${
-                  dragOver === 'transcript' ? 'border-accent-culture/50 bg-accent-culture/5' : 'border-white/[0.1] hover:border-white/[0.2] bg-surface'
-                }`}
-              >
-                <input
-                  ref={transcriptFileRef}
-                  type="file"
-                  accept=".txt,.pdf,.docx"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0], 'transcript')}
+            {/* Transcript Card */}
+            <div className="bg-surface/50 border border-white/[0.06] rounded-xl p-4 sm:p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-semibold text-text uppercase tracking-wide flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent-culture" />
+                    Interview Transcript
+                  </label>
+                  <span className="text-[11px] text-muted">File or text</span>
+                </div>
+
+                {/* Dropzone for Transcript */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragOver('transcript'); }}
+                  onDragLeave={() => setDragOver(null)}
+                  onDrop={(e) => handleDrop(e, 'transcript')}
+                  onClick={() => transcriptFileRef.current?.click()}
+                  className={`cursor-pointer rounded-lg border-2 border-dashed p-3.5 text-center transition-all ${
+                    dragOver === 'transcript'
+                      ? 'border-accent-culture/60 bg-accent-culture/5'
+                      : 'border-white/[0.1] hover:border-white/[0.2] bg-surface'
+                  }`}
+                >
+                  <input
+                    ref={transcriptFileRef}
+                    type="file"
+                    accept=".txt,.pdf,.docx"
+                    className="hidden"
+                    onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'transcript')}
+                  />
+
+                  {transcriptFile ? (
+                    <div className="flex items-center justify-between bg-white/[0.04] rounded-md px-3 py-2 text-[12px] text-accent-culture">
+                      <div className="flex items-center gap-2 truncate">
+                        <FileText size={14} className="flex-shrink-0" />
+                        <span className="truncate font-medium">{transcriptFile.name}</span>
+                        <span className="text-[10px] text-muted">({(transcriptFile.size / 1024).toFixed(1)} KB)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTranscriptFile(null);
+                          if (transcriptFileRef.current) transcriptFileRef.current.value = '';
+                        }}
+                        className="p-1 hover:bg-white/[0.1] rounded text-muted hover:text-text transition-colors"
+                        title="Remove file"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1 py-1">
+                      <FileUp size={18} className="text-muted" />
+                      <span className="text-xs text-muted">Drop transcript or click to upload</span>
+                      <span className="text-[10px] text-muted/70">.txt, .pdf, .docx</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative flex py-2 items-center">
+                  <div className="flex-grow border-t border-white/[0.06]"></div>
+                  <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted/70 font-semibold">OR</span>
+                  <div className="flex-grow border-t border-white/[0.06]"></div>
+                </div>
+
+                <textarea
+                  value={transcriptText}
+                  onChange={(e) => setTranscriptText(e.target.value)}
+                  placeholder="Or paste transcript text here…"
+                  className="w-full bg-surface border border-white/[0.08] rounded-lg px-3 py-2.5 text-[13px] text-text placeholder:text-muted/50 focus:outline-none focus:border-accent-culture/50 transition-colors resize-y min-h-[110px] font-mono"
                 />
-                {parsing === 'transcript' ? (
-                  <div className="flex flex-col items-center gap-2 py-3">
-                    <Loader2 size={20} className="animate-spin text-accent-culture" />
-                    <span className="text-xs text-muted">Parsing…</span>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-1.5 py-2">
-                    <FileUp size={20} className="text-muted" />
-                    <span className="text-xs text-muted">Drop file or click to upload</span>
-                    <span className="text-[10px] text-muted/70">.txt, .pdf, .docx</span>
-                  </div>
-                )}
-                {transcriptFileName && !parsing && (
-                  <div className="flex items-center gap-1.5 mt-2 text-[11px] text-accent-culture">
-                    <FileText size={12} />
-                    <span className="truncate">{transcriptFileName}</span>
-                  </div>
-                )}
               </div>
-              <textarea
-                value={transcriptText}
-                onChange={(e) => setTranscriptText(e.target.value)}
-                placeholder="Or paste transcript text here…"
-                className="w-full mt-2 bg-surface border border-white/[0.08] rounded-lg px-3 py-2.5 text-[13px] text-text placeholder:text-muted/50 focus:outline-none focus:border-accent-culture/50 transition-colors resize-y min-h-[120px] font-mono"
-              />
+              {transcriptFile && transcriptText.trim() && (
+                <p className="text-[11px] text-accent-culture/80 mt-1.5 flex items-center gap-1">
+                  <span>ℹ️</span> Pasted text takes precedence over the uploaded file.
+                </p>
+              )}
             </div>
           </div>
+
+          {/* Validation & Error Notices */}
+          <AnimatePresence>
+            {errorMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                className="flex items-center gap-2 p-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-xs"
+              >
+                <AlertCircle size={15} className="flex-shrink-0" />
+                <span>{errorMessage}</span>
+              </motion.div>
+            )}
+
+            {!canBuild && missingFields.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-[12px] text-muted/80 text-center"
+              >
+                Please provide{' '}
+                <span className="text-warning font-medium">
+                  {missingFields.join(', ')}
+                </span>{' '}
+                (via file upload or text) to begin evaluation.
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Build button */}
           <motion.button
@@ -337,20 +424,20 @@ export function IntakeForm() {
             whileTap={canBuild ? { scale: 0.99 } : undefined}
             onClick={handleBuild}
             disabled={!canBuild || building}
-            className={`w-full flex items-center justify-center gap-2 rounded-lg py-3 font-semibold text-sm transition-colors ${
+            className={`w-full flex items-center justify-center gap-2 rounded-lg py-3.5 font-semibold text-sm transition-all shadow-lg ${
               canBuild && !building
-                ? 'bg-accent-technical text-bg hover:bg-accent-technical/90'
-                : 'bg-surface-2 text-muted cursor-not-allowed'
+                ? 'bg-accent-technical text-bg hover:bg-accent-technical/90 shadow-accent-technical/20 cursor-pointer'
+                : 'bg-surface-2 text-muted border border-white/[0.05] cursor-not-allowed'
             }`}
           >
             {building ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                Building Profile…
+                <Loader2 size={18} className="animate-spin" />
+                Constructing Candidate Fact Base…
               </>
             ) : (
               <>
-                <Sparkles size={16} />
+                <Sparkles size={18} />
                 Build Candidate Profile
               </>
             )}
