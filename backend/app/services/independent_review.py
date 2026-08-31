@@ -27,6 +27,8 @@ from app.validation import EVIDENCE_RETRY_INSTRUCTION, validate_evidence
 
 logger = logging.getLogger(__name__)
 
+import time
+
 # The four agent IDs — typed as a sequence for iteration
 AGENT_IDS: list[AgentId] = ["technical", "culture", "hiring_manager", "skeptic"]
 
@@ -42,6 +44,7 @@ async def run_independent_reviews(
         opinions — list of 4 AgentOpinion objects
         warnings — accumulated validation warnings
     """
+    t_all = time.perf_counter()
     tasks = [_run_single_agent(agent_id, profile) for agent_id in AGENT_IDS]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -50,15 +53,17 @@ async def run_independent_reviews(
 
     for agent_id, result in zip(AGENT_IDS, results):
         if isinstance(result, Exception):
-            logger.error("Agent %s failed: %s", agent_id, result)
+            logger.error("[IndependentReview] Agent %s failed: %s", agent_id, result)
             warnings.append(f"Agent {agent_id} failed: {result}")
             opinions.append(_mock_opinion(agent_id, profile))
-            warnings.append(f"Agent {agent_id}: using mock fallback due to failure")
+            warnings.append(f"Agent {agent_id}: using fallback due to failure")
         else:
             opinion, agent_warnings = result
             opinions.append(opinion)
             warnings.extend(agent_warnings)
 
+    total_duration = time.perf_counter() - t_all
+    logger.info("[IndependentReview] All 4 agents completed in %.2fs", total_duration)
     return opinions, warnings
 
 
@@ -83,8 +88,9 @@ async def _run_single_agent(
     Note: there is no parameter for other agents' opinions.  This is the
     architectural guarantee of independence.
     """
+    t0 = time.perf_counter()
     system_prompt = get_persona_prompt(agent_id)
-    user_prompt = _build_user_prompt(profile)
+    user_prompt = _build_user_prompt(agent_id, profile)
     warnings: list[str] = []
 
     try:
@@ -97,16 +103,19 @@ async def _run_single_agent(
 
         opinion = _parse_opinion(agent_id, raw)
 
-        # Evidence validation — check substring match and collect warnings without slow blocking retry
+        # Evidence validation — check substring match and collect warnings
         _, ev_warnings = validate_evidence(opinion, profile)
         warnings.extend(ev_warnings)
 
+        duration = time.perf_counter() - t0
+        logger.info("[IndependentReview] %s completed in %.2fs (success=True)", agent_id, duration)
         return opinion, warnings
     except Exception as exc:
-        logger.error("Agent %s evaluation failed: %s", agent_id, exc)
-        warnings.append(f"Agent {agent_id} failed: {exc}")
+        duration = time.perf_counter() - t0
+        logger.warning("[IndependentReview] %s failed in %.2fs: %s — using fallback", agent_id, duration, exc)
+        warnings.append(f"Agent {agent_id} evaluation failed: {exc}")
         opinion = _mock_opinion(agent_id, profile)
-        warnings.append(f"Agent {agent_id}: using contextual fallback assessment")
+        warnings.append(f"Agent {agent_id}: using fallback opinion due to upstream error")
         return opinion, warnings
 
 
@@ -115,11 +124,27 @@ async def _run_single_agent(
 # ---------------------------------------------------------------------------
 
 
-def _build_user_prompt(profile: CandidateProfile) -> str:
-    """Build the user message for an independent evaluation."""
-    profile_data = profile.model_dump(by_alias=True)
-    profile_data.pop("resumeText", None)
-    profile_data.pop("transcriptText", None)
+def _build_user_prompt(agent_id: AgentId, profile: CandidateProfile) -> str:
+    """Build a persona-specialized, compact user message for independent evaluation."""
+    skills_summary = "\n".join(
+        f"- {s.name}: {s.evidence} (Source: {s.source})" for s in profile.skills
+    )
+    exp_summary = "\n".join(
+        f"- {e.title} at {e.company} ({e.duration}): " + "; ".join(e.highlights)
+        for e in profile.experience
+    )
+    edu_summary = "\n".join(
+        f"- {ed.school} — {ed.degree}" + (f" ({ed.year})" if ed.year else "")
+        for ed in profile.education
+    )
+    claims_summary = "\n".join(
+        f"- \"{c.text}\" (Source: {c.source})" for c in profile.claims
+    )
+
+    # Clean text snippets for verbatim quote extraction (compact 1,500 chars limit)
+    resume_snippet = profile.resume_text.strip()[:1500] if profile.resume_text else "No raw resume text provided."
+    transcript_snippet = profile.transcript_text.strip()[:1500] if profile.transcript_text else "No raw transcript text provided."
+
     return f"""Evaluate this candidate for the target role below.
 
 <candidate_target_role>
@@ -128,17 +153,27 @@ def _build_user_prompt(profile: CandidateProfile) -> str:
 
 CANDIDATE NAME: {profile.name}
 
+<candidate_fact_base>
+SKILLS:
+{skills_summary or "None listed"}
+
+EXPERIENCE:
+{exp_summary or "None listed"}
+
+EDUCATION:
+{edu_summary or "None listed"}
+
+KEY CLAIMS:
+{claims_summary or "None listed"}
+</candidate_fact_base>
+
 <candidate_resume>
-{profile.resume_text}
+{resume_snippet}
 </candidate_resume>
 
 <candidate_transcript>
-{profile.transcript_text}
+{transcript_snippet}
 </candidate_transcript>
-
-<extracted_profile_data>
-{json.dumps(profile_data, indent=2)}
-</extracted_profile_data>
 
 Provide your independent evaluation as a JSON object following the schema and evidence rules in your system instructions."""
 
@@ -149,10 +184,12 @@ def _parse_opinion(agent_id: AgentId, raw: dict) -> AgentOpinion:
 
     evidence_list = []
     for ev in raw.get("evidence", []):
+        source_raw = str(ev.get("source", "resume")).strip().lower()
+        source = "transcript" if "transcript" in source_raw else "resume"
         evidence_list.append(
             Evidence(
                 quote=str(ev.get("quote", "")),
-                source=ev.get("source", "resume"),
+                source=source,
                 note=str(ev.get("note", "")),
             )
         )

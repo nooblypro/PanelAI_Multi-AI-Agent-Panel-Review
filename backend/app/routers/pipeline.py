@@ -183,25 +183,27 @@ async def independent_review(profile: CandidateProfile) -> dict:
 
 @router.post("/independent-review/{agent_id}")
 async def independent_review_single(agent_id: str, profile: CandidateProfile) -> dict:
-    """Run a single agent evaluation. Used for frontend progress tracking."""
+    """Run a single agent evaluation. Used for frontend parallel progress tracking."""
     import time
     t0 = time.perf_counter()
-    from app.services.independent_review import _run_single_agent, _mock_opinion
+    from app.services.independent_review import _run_single_agent
     try:
         opinion, warnings = await _run_single_agent(agent_id, profile)
         elapsed_ms = int((time.perf_counter() - t0) * 1000)
         logger.info("[PIPELINE] single_agent_%s_ms=%d", agent_id, elapsed_ms)
+        result: dict = {
+            "opinion": opinion.model_dump(by_alias=True),
+        }
+        if warnings:
+            result["warnings"] = warnings
+        return result
     except Exception as exc:
-        logger.exception("Single agent review endpoint failed: %s", agent_id)
-        opinion = _mock_opinion(agent_id, profile)
-        warnings = [f"Agent {agent_id} endpoint error: {exc}", f"Agent {agent_id}: using fallback opinion"]
-
-    result: dict = {
-        "opinion": opinion.model_dump(by_alias=True),
-    }
-    if warnings:
-        result["warnings"] = warnings
-    return result
+        elapsed_ms = int((time.perf_counter() - t0) * 1000)
+        logger.exception("[PIPELINE] single_agent_%s_failed_ms=%d: %s", agent_id, elapsed_ms, exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Agent {agent_id} evaluation failed: {exc}",
+        ) from exc
 
 
 # ---------------------------------------------------------------------------

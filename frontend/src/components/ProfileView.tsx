@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Pencil, ArrowRight, Briefcase, GraduationCap, Quote, Search } from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
@@ -129,16 +129,25 @@ export function ProfileView() {
   const updateProfileName = usePipelineStore((s) => s.updateProfileName);
   const setStage = usePipelineStore((s) => s.setStage);
   const startReview = usePipelineStore((s) => s.startReview);
+  const prefetchReview = usePipelineStore((s) => s.prefetchReview);
   const reviewStatus = usePipelineStore((s) => s.reviewStatus);
 
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(profile?.name || '');
 
+  useEffect(() => {
+    if (profile && reviewStatus === 'idle') {
+      prefetchReview();
+    }
+  }, [profile, reviewStatus, prefetchReview]);
+
   if (!profile) return null;
 
   const handleStartReview = () => {
     setStage('review');
-    startReview();
+    if (reviewStatus === 'idle' || reviewStatus === 'error') {
+      startReview();
+    }
   };
 
   return (

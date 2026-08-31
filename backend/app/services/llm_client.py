@@ -56,13 +56,21 @@ def _get_gemini_client():
 _http_client: Optional[httpx.AsyncClient] = None
 
 
+STAGE_MAX_TOKENS: dict[str, int] = {
+    "independent_review": 450,
+    "debate": 750,
+    "synthesis": 650,
+    "profile_builder": 800,
+}
+
+
 def get_http_client() -> httpx.AsyncClient:
     """Return or initialize the shared persistent async HTTP client."""
     global _http_client
     if _http_client is None or _http_client.is_closed:
         _http_client = httpx.AsyncClient(
-            timeout=httpx.Timeout(22.0, connect=5.0),
-            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
+            timeout=httpx.Timeout(18.0, connect=5.0),
+            limits=httpx.Limits(max_keepalive_connections=30, max_connections=60),
         )
     return _http_client
 
@@ -87,29 +95,7 @@ async def generate_json(
     stage: str = "unknown",
     agent_id: Optional[str] = None,
 ) -> dict[str, Any] | list[Any]:
-    """Call the configured LLM provider and parse the response as JSON.
-
-    Parameters
-    ----------
-    system_prompt : str
-        The system instruction for this call.
-    user_prompt : str
-        The user message containing context / data.
-    stage : str
-        Label for logging (e.g. "independent_review", "debate").
-    agent_id : Optional[str]
-        Label for logging (e.g. "technical", "skeptic").
-
-    Returns
-    -------
-    dict | list
-        Parsed JSON from the model response.
-
-    Raises
-    ------
-    LLMError
-        If the call fails after retries or the output is unparseable.
-    """
+    """Call the configured LLM provider and parse the response as JSON."""
     import time
 
     provider = settings.llm_provider.lower()
@@ -184,6 +170,7 @@ async def _generate_openrouter_json(
     base_url = settings.openrouter_base_url.rstrip("/")
     url = f"{base_url}/chat/completions"
     model = settings.get_model()
+    max_tokens = STAGE_MAX_TOKENS.get(stage, 600)
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -193,25 +180,30 @@ async def _generate_openrouter_json(
     }
 
     http_client = get_http_client()
+    use_json_format = True
 
     for attempt in range(1, 3):  # max 2 attempts
         temperature = 0.7 if attempt == 1 else 0.4
-        payload = {
+        payload: dict[str, Any] = {
             "model": model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": temperature,
+            "max_tokens": max_tokens,
         }
+        if use_json_format:
+            payload["response_format"] = {"type": "json_object"}
 
         try:
             logger.info(
-                "[%s] attempt %d — calling OpenRouter (model=%s, temp=%.1f)",
+                "[%s] attempt %d — calling OpenRouter (model=%s, temp=%.1f, max_tokens=%d)",
                 label,
                 attempt,
                 model,
                 temperature,
+                max_tokens,
             )
 
             response = await http_client.post(url, headers=headers, json=payload)
@@ -219,8 +211,14 @@ async def _generate_openrouter_json(
             if response.status_code != 200:
                 error_detail = response.text[:400]
                 error_msg = f"[{label}] OpenRouter returned HTTP {response.status_code}: {error_detail}"
-                if response.status_code in (400, 401, 403, 404, 413, 422):
-                    # Deterministic failure, do not retry
+
+                # If response_format caused 400, retry without it
+                if response.status_code == 400 and "response_format" in error_detail.lower() and use_json_format:
+                    logger.warning("[%s] Model rejected response_format, retrying without it", label)
+                    use_json_format = False
+                    continue
+
+                if response.status_code in (401, 403, 404, 413, 422):
                     raise LLMError(f"Deterministic error: {error_msg}")
                 raise LLMError(error_msg)
 
@@ -238,8 +236,8 @@ async def _generate_openrouter_json(
             return parsed
 
         except httpx.TimeoutException as exc:
-            logger.warning("[%s] request timed out (22s limit): %s", label, exc)
-            raise LLMError(f"[{label}] request timed out after 22s") from exc
+            logger.warning("[%s] request timed out (18s limit): %s", label, exc)
+            raise LLMError(f"[{label}] request timed out after 18s") from exc
 
         except LLMError as exc:
             if attempt == 2 or "Deterministic error:" in str(exc):
@@ -276,15 +274,17 @@ async def _generate_gemini_json(
 
     client = _get_gemini_client()
     model = settings.get_model()
+    max_tokens = STAGE_MAX_TOKENS.get(stage, 600)
 
     for attempt in range(1, 3):  # max 2 attempts
         temperature = 0.7 if attempt == 1 else 0.4
         try:
             logger.info(
-                "[%s] attempt %d — calling Gemini (model=%s)",
+                "[%s] attempt %d — calling Gemini (model=%s, max_tokens=%d)",
                 label,
                 attempt,
                 model,
+                max_tokens,
             )
 
             response = await client.aio.models.generate_content(
@@ -294,6 +294,7 @@ async def _generate_gemini_json(
                     system_instruction=system_prompt,
                     response_mime_type="application/json",
                     temperature=temperature,
+                    max_output_tokens=max_tokens,
                 ),
             )
 

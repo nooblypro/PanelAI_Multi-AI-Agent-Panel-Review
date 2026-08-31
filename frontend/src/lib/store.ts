@@ -28,6 +28,7 @@ interface PipelineState {
   setStage: (stage: Stage) => void;
   setProfile: (profile: CandidateProfile) => void;
   updateProfileName: (name: string) => void;
+  prefetchReview: () => void;
   startReview: () => Promise<void>;
   startDebate: () => Promise<void>;
   revealNextTurn: () => void;
@@ -60,16 +61,23 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
 
   setStage: (stage) => set({ stage }),
 
-  setProfile: (profile) => set({ profile, stage: 'profile', reviewError: null, debateError: null, verdictError: null }),
+  setProfile: (profile) => set({ profile, stage: 'profile', reviewStatus: 'idle', reviewError: null, debateError: null, verdictError: null }),
 
   updateProfileName: (name) => {
     const profile = get().profile;
     if (profile) set({ profile: { ...profile, name } });
   },
 
+  prefetchReview: () => {
+    const state = get();
+    if (state.profile && state.reviewStatus === 'idle') {
+      state.startReview();
+    }
+  },
+
   startReview: async () => {
     const profile = get().profile;
-    if (!profile) return;
+    if (!profile || get().reviewStatus === 'running') return;
 
     set({
       reviewStatus: 'running',

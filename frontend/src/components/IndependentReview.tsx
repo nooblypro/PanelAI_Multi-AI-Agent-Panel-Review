@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Lock, Check, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
@@ -189,6 +190,12 @@ export function IndependentReview() {
   const allDone = reviewStatus === 'done' || (opinions.length === 4);
   const running = reviewStatus === 'running';
   const isError = reviewStatus === 'error';
+
+  useEffect(() => {
+    if (reviewStatus === 'idle') {
+      startReview();
+    }
+  }, [reviewStatus, startReview]);
 
   const handleStartDebate = () => {
     setStage('debate');
