@@ -31,13 +31,13 @@ export function Stepper({ currentStage }: { currentStage: Stage }) {
                     borderColor: isCurrent || isComplete ? 'var(--text)' : 'var(--border)',
                     color: isCurrent || isComplete ? 'var(--bg)' : 'var(--muted)',
                   }}
-                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-[11px] font-semibold border shadow-xs transition-colors"
+                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-xs sm:text-[12px] font-semibold border shadow-xs transition-colors"
                 >
-                  {isComplete ? <Check size={12} strokeWidth={2.5} /> : i + 1}
+                  {isComplete ? <Check size={14} strokeWidth={2.5} /> : i + 1}
                 </motion.div>
                 <div className="relative">
                   <span
-                    className={`text-[11px] sm:text-xs hidden md:inline transition-colors ${
+                    className={`text-xs sm:text-[13px] hidden md:inline transition-colors ${
                       isCurrent
                         ? 'font-bold text-text'
                         : isComplete

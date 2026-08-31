@@ -19,11 +19,11 @@ function SkillChip({ skill, index }: { skill: CandidateProfile['skills'][number]
     >
       <button
         onClick={() => setShowTooltip(!showTooltip)}
-        className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium bg-surface-2 border border-border hover:border-accent-technical/40 transition-colors"
+        className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs sm:text-[13px] font-medium bg-surface-2 border border-border hover:border-accent-technical/40 transition-colors"
       >
         <span className="text-text">{skill.name}</span>
         <span
-          className="text-[9px] font-semibold px-1 py-0.5 rounded uppercase"
+          className="text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase"
           style={{
             backgroundColor:
               skill.source === 'resume' ? 'rgba(37,99,235,0.15)' : 'rgba(16,185,129,0.15)',
@@ -38,9 +38,9 @@ function SkillChip({ skill, index }: { skill: CandidateProfile['skills'][number]
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15 }}
-          className="absolute bottom-full left-0 mb-2 z-20 w-64 bg-surface border border-border rounded-lg p-3 shadow-xl"
+          className="absolute bottom-full left-0 mb-2 z-20 w-72 bg-surface border border-border rounded-xl p-3.5 shadow-xl"
         >
-          <p className="text-[11px] text-muted leading-relaxed font-mono">{skill.evidence}</p>
+          <p className="text-xs text-muted leading-relaxed font-mono">{skill.evidence}</p>
         </motion.div>
       )}
     </motion.div>
@@ -65,16 +65,16 @@ function ExperienceTimeline({
           className="relative pl-5"
         >
           {/* Timeline dot + line */}
-          <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-accent-technical" />
+          <div className="absolute left-0 top-2 w-2.5 h-2.5 rounded-full bg-accent-technical" />
           {i < experience.length - 1 && (
-            <div className="absolute left-[3px] top-4 bottom-[-12px] w-px bg-border" />
+            <div className="absolute left-[4px] top-4 bottom-[-14px] w-px bg-border" />
           )}
           <div>
-            <h4 className="text-[13px] font-semibold text-text">{exp.company}</h4>
-            <p className="text-[12px] text-muted">{exp.title} · {exp.duration}</p>
-            <ul className="mt-1.5 space-y-1">
+            <h4 className="text-sm font-semibold text-text">{exp.company}</h4>
+            <p className="text-[13px] text-muted">{exp.title} · {exp.duration}</p>
+            <ul className="mt-2 space-y-1.5">
               {exp.highlights.map((h, j) => (
-                <li key={j} className="text-[12px] text-text/80 flex items-start gap-1.5">
+                <li key={j} className="text-[13px] text-text/85 flex items-start gap-2 leading-relaxed">
                   <span className="text-muted mt-0.5">·</span>
                   <span>{h}</span>
                 </li>
@@ -99,16 +99,16 @@ function ClaimQuote({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.25 + index * 0.05, duration: 0.25 }}
-      className="p-3.5 rounded-lg bg-surface-2 border border-border flex items-start justify-between gap-3 group hover:border-accent-technical/40 transition-colors"
+      className="p-4 rounded-xl bg-surface-2 border border-border flex items-start justify-between gap-3.5 group hover:border-accent-technical/40 transition-colors"
     >
-      <div className="flex items-start gap-2.5 flex-1 min-w-0">
-        <Quote size={14} className="text-accent-skeptic flex-shrink-0 mt-0.5 opacity-70" />
-        <p className="text-[12px] text-text italic leading-relaxed font-mono">
+      <div className="flex items-start gap-3 flex-1 min-w-0">
+        <Quote size={16} className="text-accent-skeptic flex-shrink-0 mt-0.5 opacity-75" />
+        <p className="text-[13px] text-text italic leading-relaxed font-mono">
           "{claim.text}"
         </p>
       </div>
       <span
-        className="text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase flex-shrink-0"
+        className="text-[10px] font-semibold px-2 py-0.5 rounded uppercase flex-shrink-0"
         style={{
           backgroundColor:
             claim.source === 'resume' ? 'rgba(37,99,235,0.15)' : 'rgba(16,185,129,0.15)',
@@ -156,7 +156,7 @@ export function ProfileView() {
         transition={{ duration: 0.3 }}
         className="mb-8"
       >
-        <div className="flex items-center gap-3 mb-1">
+        <div className="flex items-center gap-3 mb-1.5">
           {editingName ? (
             <input
               autoFocus
@@ -172,10 +172,10 @@ export function ProfileView() {
                   setEditingName(false);
                 }
               }}
-              className="text-2xl font-bold text-text bg-surface border border-border rounded px-2 py-1 focus:outline-none focus:border-accent-technical"
+              className="text-2xl sm:text-3xl font-bold text-text bg-surface border border-border rounded-lg px-2.5 py-1 focus:outline-none focus:border-accent-technical"
             />
           ) : (
-            <h1 className="text-2xl font-bold font-serif text-text">{profile.name}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold font-serif text-text">{profile.name}</h1>
           )}
           <button
             onClick={() => {
@@ -184,13 +184,13 @@ export function ProfileView() {
             }}
             className="text-muted hover:text-text transition-colors p-1 cursor-pointer"
           >
-            <Pencil size={15} />
+            <Pencil size={17} />
           </button>
         </div>
-        <span className="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-accent-technical/10 text-accent-technical border border-accent-technical/20">
+        <span className="inline-block text-xs sm:text-[13px] font-semibold px-3.5 py-1 rounded-full bg-accent-technical/10 text-accent-technical border border-accent-technical/20">
           {formatCleanRole(profile.targetRole)}
         </span>
-        <p className="text-[12px] text-muted mt-3 max-w-2xl">
+        <p className="text-sm text-muted mt-3 max-w-2xl">
           This is the shared fact-base. All four agents read only from this profile — no other context is passed downstream.
         </p>
       </motion.div>
@@ -204,8 +204,8 @@ export function ProfileView() {
           transition={{ delay: 0.05, duration: 0.3 }}
           className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
         >
-          <h3 className="text-[13px] font-semibold text-text mb-3 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-accent-technical" />
+          <h3 className="text-sm font-bold text-text mb-3.5 flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-full bg-accent-technical" />
             Skills
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -222,8 +222,8 @@ export function ProfileView() {
           transition={{ delay: 0.1, duration: 0.3 }}
           className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
         >
-          <h3 className="text-[13px] font-semibold text-text mb-4 flex items-center gap-2">
-            <Briefcase size={14} className="text-accent-hm" />
+          <h3 className="text-sm font-bold text-text mb-4 flex items-center gap-2">
+            <Briefcase size={16} className="text-accent-hm" />
             Experience
           </h3>
           <ExperienceTimeline experience={profile.experience} index={0} />
@@ -236,11 +236,11 @@ export function ProfileView() {
           transition={{ delay: 0.15, duration: 0.3 }}
           className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
         >
-          <h3 className="text-[13px] font-semibold text-text mb-4 flex items-center gap-2">
-            <GraduationCap size={14} className="text-accent-culture" />
+          <h3 className="text-sm font-bold text-text mb-4 flex items-center gap-2">
+            <GraduationCap size={16} className="text-accent-culture" />
             Education
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {profile.education.map((edu, i) => (
               <motion.div
                 key={i}
@@ -248,8 +248,8 @@ export function ProfileView() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.05, duration: 0.25 }}
               >
-                <h4 className="text-[13px] font-semibold text-text">{edu.school}</h4>
-                <p className="text-[12px] text-muted">{edu.degree}{edu.year ? ` · ${edu.year}` : ''}</p>
+                <h4 className="text-sm font-semibold text-text">{edu.school}</h4>
+                <p className="text-[13px] text-muted">{edu.degree}{edu.year ? ` · ${edu.year}` : ''}</p>
               </motion.div>
             ))}
           </div>
@@ -263,14 +263,14 @@ export function ProfileView() {
         transition={{ delay: 0.2, duration: 0.3 }}
         className="mb-8"
       >
-        <h3 className="text-[13px] font-semibold text-text mb-3 flex items-center gap-2">
-          <Search size={14} className="text-accent-skeptic" />
+        <h3 className="text-sm font-bold text-text mb-3.5 flex items-center gap-2">
+          <Search size={16} className="text-accent-skeptic" />
           Key Claims
-          <span className="text-[11px] text-muted font-normal ml-1">
+          <span className="text-xs text-muted font-normal ml-1">
             — what the Skeptic Agent will interrogate
           </span>
         </h3>
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {profile.claims.map((claim, i) => (
             <ClaimQuote key={i} claim={claim} index={i} />
           ))}
@@ -287,10 +287,10 @@ export function ProfileView() {
           onClick={handleStartReview}
           disabled={reviewStatus === 'running'}
           aria-label="Run independent review with 4 parallel evaluator agents"
-          className="flex items-center gap-2 rounded-lg px-5 py-2.5 font-semibold text-sm bg-accent-technical text-bg hover:bg-accent-technical/90 transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-sm sm:text-base bg-accent-technical text-bg hover:bg-accent-technical/90 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
         >
           Run Panel Review
-          <ArrowRight size={16} />
+          <ArrowRight size={17} />
         </button>
       </motion.div>
     </div>

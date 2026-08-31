@@ -45,19 +45,19 @@ const STANCE_COLORS: Record<DebateTurn['stance'], string> = {
 function ReplyConnector({ fromAgent, excerpt }: { fromAgent: AgentId; excerpt: string }) {
   const color = AGENT_COLORS[fromAgent];
   return (
-    <div className="mb-2 ml-10 sm:ml-12 relative">
+    <div className="mb-2.5 ml-10 sm:ml-12 relative">
       <div
         className="absolute left-[-12px] top-0 bottom-0 w-px"
         style={{ backgroundColor: `${color}40` }}
       />
       <div
-        className="rounded-md px-3 py-2 border-l-2 bg-surface-2/80"
+        className="rounded-xl px-3.5 py-2 border-l-2 bg-surface-2/80"
         style={{ borderColor: `${color}60` }}
       >
-        <p className="text-[10px] text-muted mb-0.5">
+        <p className="text-xs text-muted mb-0.5">
           Replying to <span style={{ color }} className="font-semibold">{AGENT_NAMES[fromAgent]}</span>
         </p>
-        <p className="font-mono text-[11px] text-text/75 italic leading-relaxed">
+        <p className="font-mono text-xs sm:text-[13px] text-text/80 italic leading-relaxed">
           &ldquo;{excerpt}&rdquo;
         </p>
       </div>
@@ -72,10 +72,10 @@ function ScoreChangeChip({ from, to }: { from: number; to: number }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold"
+      className="inline-flex items-center gap-1 rounded-md px-2.5 py-0.5 text-xs font-semibold"
       style={{ backgroundColor: `${color}1A`, color }}
     >
-      <Icon size={11} />
+      <Icon size={12} />
       Score {from} → {to}
     </span>
   );
@@ -135,35 +135,35 @@ function DebateBubble({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
-      className={`flex gap-3 transition-all duration-300 ${
+      className={`flex gap-3.5 transition-all duration-300 ${
         isSpeaking
-          ? 'p-2 rounded-xl bg-surface-2 border border-accent-technical/40 shadow-md ring-2 ring-accent-technical/20'
+          ? 'p-2.5 rounded-xl bg-surface-2 border border-accent-technical/40 shadow-md ring-2 ring-accent-technical/20'
           : 'p-1'
       }`}
     >
       {/* Avatar */}
       <div
-        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 transition-transform"
+        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform mt-0.5"
         style={{
           backgroundColor: `${color}1A`,
           border: `1.5px solid ${color}40`,
           boxShadow: isSpeaking ? `0 0 12px ${color}50` : 'none',
         }}
       >
-        <Icon size={18} style={{ color }} />
+        <Icon size={20} style={{ color }} />
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13px] font-semibold" style={{ color }}>{name}</span>
+            <span className="text-sm sm:text-[15px] font-bold" style={{ color }}>{name}</span>
             <span
-              className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded"
+              className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md"
               style={{ backgroundColor: `${stanceColor}1A`, color: stanceColor }}
             >
-              <StanceIcon size={10} />
+              <StanceIcon size={12} />
               {turn.stance}
             </span>
             {turn.scoreChange && (
@@ -173,7 +173,7 @@ function DebateBubble({
 
           <div className="flex items-center gap-2">
             {isSpeaking ? (
-              <div className="flex items-center gap-1 text-[10px] font-medium text-accent-technical">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-accent-technical">
                 <SoundWave color={color} />
                 <span className="hidden sm:inline">Speaking</span>
               </div>
@@ -183,7 +183,7 @@ function DebateBubble({
                 title="Play this persona voice turn"
                 className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1 text-muted hover:text-accent-technical rounded transition-opacity"
               >
-                <Volume2 size={13} />
+                <Volume2 size={15} />
               </button>
             ) : null}
           </div>
@@ -196,12 +196,12 @@ function DebateBubble({
 
         {/* Message bubble */}
         <div
-          className="rounded-xl px-4 py-3 bg-surface border border-border/80 shadow-xs transition-colors"
+          className="rounded-xl px-4 sm:px-5 py-3.5 bg-surface border border-border/80 shadow-xs transition-colors"
           style={{
-            borderLeft: `3px solid ${color}`,
+            borderLeft: `3.5px solid ${color}`,
           }}
         >
-          <p className="text-[13px] text-text/90 leading-relaxed">{turn.content}</p>
+          <p className="text-sm sm:text-[15px] text-text/90 leading-relaxed">{turn.content}</p>
         </div>
       </div>
     </motion.div>
@@ -349,7 +349,7 @@ export function DebateThread() {
             </span>
           </h2>
           <p className="text-xs text-muted mt-1">
-            Agents cross-examine each other's independent opinions and resolve disagreements before the final verdict.
+            Evaluators challenge contradictory claims, defend findings, and refine stances based on peer critique before synthesizing the final verdict.
           </p>
         </div>
       </div>
