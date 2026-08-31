@@ -225,3 +225,10 @@ class EvaluateResponse(BaseModel):
     debate_turns: list[DebateTurn] = Field(alias="debateTurns")
     decision: FinalDecision
     warnings: list[str] = Field(default_factory=list)
+
+
+class VoiceSynthesizeRequest(BaseModel):
+    """POST /api/voice/synthesize — synthesize speech for a persona turn."""
+    model_config = _CAMEL
+    agent_id: str = Field(alias="agentId")
+    text: str

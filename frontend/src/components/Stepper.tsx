@@ -14,8 +14,8 @@ export function Stepper({ currentStage }: { currentStage: Stage }) {
   const currentIndex = STEPS.findIndex((s) => s.id === currentStage);
 
   return (
-    <div className="pt-6 pb-2 px-4 sm:px-8">
-      <div className="max-w-4xl mx-auto flex items-center justify-between">
+    <div className="py-1 px-2">
+      <div className="max-w-3xl mx-auto flex items-center justify-between">
         {STEPS.map((step, i) => {
           const isComplete = i < currentIndex;
           const isCurrent = i === currentIndex;
@@ -27,22 +27,22 @@ export function Stepper({ currentStage }: { currentStage: Stage }) {
                 <motion.div
                   initial={false}
                   animate={{
-                    backgroundColor: isCurrent ? '#0F172A' : isComplete ? '#0F172A' : '#FFFFFF',
-                    borderColor: isCurrent ? '#0F172A' : isComplete ? '#0F172A' : '#CBD5E1',
-                    color: isCurrent || isComplete ? '#FFFFFF' : '#64748B',
+                    backgroundColor: isCurrent || isComplete ? 'var(--text)' : 'var(--surface)',
+                    borderColor: isCurrent || isComplete ? 'var(--text)' : 'var(--border)',
+                    color: isCurrent || isComplete ? 'var(--bg)' : 'var(--muted)',
                   }}
-                  className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold border shadow-xs transition-colors"
+                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-[11px] font-semibold border shadow-xs transition-colors"
                 >
                   {isComplete ? <Check size={12} strokeWidth={2.5} /> : i + 1}
                 </motion.div>
                 <div className="relative">
                   <span
-                    className={`text-xs hidden sm:inline transition-colors ${
+                    className={`text-[11px] sm:text-xs hidden md:inline transition-colors ${
                       isCurrent
-                        ? 'font-bold text-slate-900'
+                        ? 'font-bold text-text'
                         : isComplete
-                        ? 'font-medium text-slate-700'
-                        : 'font-normal text-slate-400'
+                        ? 'font-medium text-text/80'
+                        : 'font-normal text-muted'
                     }`}
                   >
                     {step.label}
@@ -50,18 +50,18 @@ export function Stepper({ currentStage }: { currentStage: Stage }) {
                   {isCurrent && (
                     <motion.div
                       layoutId="activeStepUnderline"
-                      className="absolute -bottom-1.5 left-0 right-0 h-[2px] bg-blue-600 rounded-full"
+                      className="absolute -bottom-1 left-0 right-0 h-[2px] bg-accent-technical rounded-full"
                     />
                   )}
                 </div>
               </div>
               {i < STEPS.length - 1 && (
-                <div className="flex-1 mx-2 sm:mx-4 h-px bg-slate-200 relative">
+                <div className="flex-1 mx-2 sm:mx-3 h-px bg-border relative">
                   <motion.div
                     initial={false}
                     animate={{ width: isComplete ? '100%' : '0%' }}
                     transition={{ duration: 0.3, ease: 'easeOut' }}
-                    className="absolute top-0 left-0 h-full bg-slate-900"
+                    className="absolute top-0 left-0 h-full bg-text"
                   />
                 </div>
               )}

@@ -59,6 +59,20 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("GEMINI_MODEL", "gemini_model"),
     )
 
+    # Text-to-Speech (TTS) Configuration
+    tts_provider: str = Field(
+        default="openai",
+        validation_alias=AliasChoices("TTS_PROVIDER", "tts_provider"),
+    )
+    tts_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("TTS_API_KEY", "tts_api_key", "OPENAI_API_KEY", "openai_api_key"),
+    )
+    tts_model: str = Field(
+        default="tts-1",
+        validation_alias=AliasChoices("TTS_MODEL", "tts_model"),
+    )
+
     # CORS
     cors_origins: Union[list[str], str] = Field(
         default=["http://localhost:5173"],

@@ -152,16 +152,16 @@ export function IntakeForm() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="w-full max-w-6xl bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 md:p-8"
+        className="w-full max-w-6xl bg-surface rounded-2xl md:rounded-3xl border border-border shadow-sm p-5 sm:p-6 md:p-8 transition-colors"
       >
         <div className="grid lg:grid-cols-12 gap-8 items-stretch">
           {/* ========================================================================= */}
           {/* LEFT COLUMN: HERO BRANDING & VALUE PROPOSITIONS */}
           {/* ========================================================================= */}
-          <div className="lg:col-span-4 bg-[#F8FAFC] border border-slate-100 rounded-2xl p-6 sm:p-7 flex flex-col justify-between">
+          <div className="lg:col-span-4 bg-surface-2 border border-border/80 rounded-2xl p-6 sm:p-7 flex flex-col justify-between transition-colors">
             <div>
               {/* Illustration */}
-              <div className="w-full mb-6 rounded-xl overflow-hidden bg-white/70 p-2 border border-slate-100 shadow-xs flex items-center justify-center">
+              <div className="w-full mb-6 rounded-xl overflow-hidden bg-surface/70 p-2 border border-border shadow-xs flex items-center justify-center">
                 <img
                   src="/hero_illustration.jpg"
                   alt="Evaluation Visual"
@@ -170,45 +170,45 @@ export function IntakeForm() {
               </div>
 
               {/* Title & Tagline */}
-              <h2 className="text-2xl sm:text-[26px] font-bold font-serif text-slate-900 tracking-tight leading-snug">
+              <h2 className="text-2xl sm:text-[26px] font-bold font-serif text-text tracking-tight leading-snug">
                 Fair. Structured.<br />
-                <span className="text-[#2563EB]">Human</span>-first.
+                <span className="text-accent-technical">Human</span>-first.
               </h2>
 
-              <p className="text-xs text-slate-500 font-normal leading-relaxed mt-2.5">
+              <p className="text-xs text-muted font-normal leading-relaxed mt-2.5">
                 Give every candidate an evaluation that's consistent, unbiased, and insightful.
               </p>
             </div>
 
             {/* Value Proposition Features */}
-            <div className="space-y-4 mt-8 pt-6 border-t border-slate-200/70">
+            <div className="space-y-4 mt-8 pt-6 border-t border-border">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-lg bg-accent-technical/10 border border-accent-technical/20 flex items-center justify-center text-accent-technical flex-shrink-0 mt-0.5">
                   <Shield size={16} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-semibold text-slate-900">Independent AI agents</h4>
-                  <p className="text-[11px] text-slate-500">Multiple perspectives, zero bias</p>
+                  <h4 className="text-xs font-semibold text-text">Independent AI agents</h4>
+                  <p className="text-[11px] text-muted">Multiple perspectives, zero bias</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-500 flex-shrink-0 mt-0.5">
                   <Scale size={16} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-semibold text-slate-900">Structured process</h4>
-                  <p className="text-[11px] text-slate-500">Every detail considered</p>
+                  <h4 className="text-xs font-semibold text-text">Structured process</h4>
+                  <p className="text-[11px] text-muted">Every detail considered</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 flex-shrink-0 mt-0.5">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-500 flex-shrink-0 mt-0.5">
                   <TrendingUp size={16} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-semibold text-slate-900">Actionable insights</h4>
-                  <p className="text-[11px] text-slate-500">Clear verdicts and reports</p>
+                  <h4 className="text-xs font-semibold text-text">Actionable insights</h4>
+                  <p className="text-[11px] text-muted">Clear verdicts and reports</p>
                 </div>
               </div>
             </div>
@@ -222,18 +222,18 @@ export function IntakeForm() {
               {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
                 <div>
-                  <h1 className="text-2xl md:text-[28px] font-bold font-serif text-slate-900 tracking-tight">
+                  <h1 className="text-2xl md:text-[28px] font-bold font-serif text-text tracking-tight">
                     New Candidate Evaluation
                   </h1>
-                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1.5 leading-relaxed max-w-xl">
+                  <p className="text-xs sm:text-[13px] text-muted mt-1.5 leading-relaxed max-w-xl">
                     Upload or paste the target role / job description, resume, and interview transcript. Four AI agents will independently evaluate, debate, and deliver a final hiring verdict.
                   </p>
                 </div>
 
                 {/* Secure Badge */}
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50/80 text-[11px] text-slate-600 flex-shrink-0 self-start">
-                  <Info size={13} className="text-slate-400" />
-                  <span>All files are <strong className="text-emerald-700 font-semibold">secure & private</strong></span>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-surface-2 text-[11px] text-muted flex-shrink-0 self-start">
+                  <Info size={13} className="text-muted" />
+                  <span>All files are <strong className="text-success font-semibold">secure & private</strong></span>
                 </div>
               </div>
 
@@ -242,15 +242,15 @@ export function IntakeForm() {
                 {/* ------------------------------------------------------------- */}
                 {/* 1. TARGET ROLE / JOB DESCRIPTION (FULL WIDTH) */}
                 {/* ------------------------------------------------------------- */}
-                <div className="border border-slate-200/90 rounded-xl p-4 sm:p-5 bg-white shadow-xs">
+                <div className="border border-border rounded-xl p-4 sm:p-5 bg-surface shadow-xs transition-colors">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded bg-accent-technical/10 text-accent-technical flex items-center justify-center">
                         <Briefcase size={13} />
                       </div>
-                      <span className="text-xs font-bold text-slate-900">1. Target Role / Job Description</span>
+                      <span className="text-xs font-bold text-text">1. Target Role / Job Description</span>
                     </div>
-                    <span className="text-[11px] text-slate-400">File or text</span>
+                    <span className="text-[11px] text-muted">File or text</span>
                   </div>
 
                   {/* Dropzone */}
@@ -261,8 +261,8 @@ export function IntakeForm() {
                     onClick={() => targetFileRef.current?.click()}
                     className={`cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition-all ${
                       dragOver === 'target'
-                        ? 'border-blue-500 bg-blue-50/50'
-                        : 'border-blue-200/70 hover:border-blue-400 bg-blue-50/20 hover:bg-blue-50/40'
+                        ? 'border-accent-technical bg-accent-technical/10'
+                        : 'border-border hover:border-accent-technical/60 bg-surface-2/40 hover:bg-surface-2'
                     }`}
                   >
                     <input
@@ -274,11 +274,11 @@ export function IntakeForm() {
                     />
 
                     {targetRoleFile ? (
-                      <div className="flex items-center justify-between bg-white rounded-md px-3 py-2 text-[12px] text-blue-600 border border-blue-100 shadow-xs">
+                      <div className="flex items-center justify-between bg-surface rounded-md px-3 py-2 text-[12px] text-accent-technical border border-border shadow-xs">
                         <div className="flex items-center gap-2 truncate">
                           <FileText size={14} className="flex-shrink-0" />
                           <span className="truncate font-medium">{targetRoleFile.name}</span>
-                          <span className="text-[10px] text-slate-400">({(targetRoleFile.size / 1024).toFixed(1)} KB)</span>
+                          <span className="text-[10px] text-muted">({(targetRoleFile.size / 1024).toFixed(1)} KB)</span>
                         </div>
                         <button
                           type="button"
@@ -287,31 +287,31 @@ export function IntakeForm() {
                             setTargetRoleFile(null);
                             if (targetFileRef.current) targetFileRef.current.value = '';
                           }}
-                          className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                          className="p-1 hover:bg-surface-2 rounded text-muted hover:text-text"
                         >
                           <X size={14} />
                         </button>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-1">
-                        <UploadCloud size={20} className="text-blue-500" />
-                        <span className="text-xs font-medium text-slate-700">Drag and drop your file here, or click to browse</span>
-                        <span className="text-[11px] text-slate-400">.txt, .pdf, .docx</span>
+                        <UploadCloud size={20} className="text-accent-technical" />
+                        <span className="text-xs font-medium text-text">Drag and drop your file here, or click to browse</span>
+                        <span className="text-[11px] text-muted">.txt, .pdf, .docx</span>
                       </div>
                     )}
                   </div>
 
                   <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-slate-100"></div>
-                    <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">OR</span>
-                    <div className="flex-grow border-t border-slate-100"></div>
+                    <div className="flex-grow border-t border-border"></div>
+                    <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted font-semibold">OR</span>
+                    <div className="flex-grow border-t border-border"></div>
                   </div>
 
                   <textarea
                     value={targetRoleText}
                     onChange={(e) => setTargetRoleText(e.target.value)}
                     placeholder="Paste or type job description or target role (e.g. Senior Backend Engineer)..."
-                    className="w-full bg-slate-50/40 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-y min-h-[64px]"
+                    className="w-full bg-surface-2/50 border border-border rounded-lg px-3.5 py-2.5 text-xs text-text placeholder:text-muted focus:outline-none focus:bg-surface focus:border-accent-technical focus:ring-1 focus:ring-accent-technical/30 transition-all resize-y min-h-[64px]"
                   />
                 </div>
 
@@ -320,16 +320,16 @@ export function IntakeForm() {
                 {/* ------------------------------------------------------------- */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   {/* RESUME CARD */}
-                  <div className="border border-slate-200/90 rounded-xl p-4 sm:p-5 bg-white shadow-xs flex flex-col justify-between">
+                  <div className="border border-border rounded-xl p-4 sm:p-5 bg-surface shadow-xs flex flex-col justify-between transition-colors">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                          <div className="w-6 h-6 rounded bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                             <User size={13} />
                           </div>
-                          <span className="text-xs font-bold text-slate-900">2. Resume</span>
+                          <span className="text-xs font-bold text-text">2. Resume</span>
                         </div>
-                        <span className="text-[11px] text-slate-400">File or text</span>
+                        <span className="text-[11px] text-muted">File or text</span>
                       </div>
 
                       {/* Dropzone */}
@@ -340,8 +340,8 @@ export function IntakeForm() {
                         onClick={() => resumeFileRef.current?.click()}
                         className={`cursor-pointer rounded-xl border-2 border-dashed p-3.5 text-center transition-all ${
                           dragOver === 'resume'
-                            ? 'border-emerald-500 bg-emerald-50/50'
-                            : 'border-emerald-200/70 hover:border-emerald-400 bg-emerald-50/20 hover:bg-emerald-50/40'
+                            ? 'border-emerald-500 bg-emerald-500/10'
+                            : 'border-border hover:border-emerald-500/60 bg-surface-2/40 hover:bg-surface-2'
                         }`}
                       >
                         <input
@@ -353,11 +353,11 @@ export function IntakeForm() {
                         />
 
                         {resumeFile ? (
-                          <div className="flex items-center justify-between bg-white rounded-md px-3 py-2 text-[12px] text-emerald-600 border border-emerald-100 shadow-xs">
+                          <div className="flex items-center justify-between bg-surface rounded-md px-3 py-2 text-[12px] text-emerald-500 border border-border shadow-xs">
                             <div className="flex items-center gap-2 truncate">
                               <FileText size={14} className="flex-shrink-0" />
                               <span className="truncate font-medium">{resumeFile.name}</span>
-                              <span className="text-[10px] text-slate-400">({(resumeFile.size / 1024).toFixed(1)} KB)</span>
+                              <span className="text-[10px] text-muted">({(resumeFile.size / 1024).toFixed(1)} KB)</span>
                             </div>
                             <button
                               type="button"
@@ -366,7 +366,7 @@ export function IntakeForm() {
                                 setResumeFile(null);
                                 if (resumeFileRef.current) resumeFileRef.current.value = '';
                               }}
-                              className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                              className="p-1 hover:bg-surface-2 rounded text-muted hover:text-text"
                             >
                               <X size={14} />
                             </button>
@@ -374,38 +374,38 @@ export function IntakeForm() {
                         ) : (
                           <div className="flex flex-col items-center gap-1">
                             <UploadCloud size={18} className="text-emerald-500" />
-                            <span className="text-xs font-medium text-slate-700">Drag and drop your file here, or click to browse</span>
-                            <span className="text-[11px] text-slate-400">.txt, .pdf, .docx</span>
+                            <span className="text-xs font-medium text-text">Drag and drop your file here, or click to browse</span>
+                            <span className="text-[11px] text-muted">.txt, .pdf, .docx</span>
                           </div>
                         )}
                       </div>
 
                       <div className="relative flex py-2 items-center">
-                        <div className="flex-grow border-t border-slate-100"></div>
-                        <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">OR</span>
-                        <div className="flex-grow border-t border-slate-100"></div>
+                        <div className="flex-grow border-t border-border"></div>
+                        <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted font-semibold">OR</span>
+                        <div className="flex-grow border-t border-border"></div>
                       </div>
 
                       <textarea
                         value={resumeText}
                         onChange={(e) => setResumeText(e.target.value)}
                         placeholder="Paste resume text here..."
-                        className="w-full bg-slate-50/40 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-y min-h-[64px]"
+                        className="w-full bg-surface-2/50 border border-border rounded-lg px-3 py-2 text-xs text-text placeholder:text-muted focus:outline-none focus:bg-surface focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition-all resize-y min-h-[64px]"
                       />
                     </div>
                   </div>
 
                   {/* TRANSCRIPT CARD */}
-                  <div className="border border-slate-200/90 rounded-xl p-4 sm:p-5 bg-white shadow-xs flex flex-col justify-between">
+                  <div className="border border-border rounded-xl p-4 sm:p-5 bg-surface shadow-xs flex flex-col justify-between transition-colors">
                     <div>
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded bg-amber-50 text-amber-600 flex items-center justify-center">
+                          <div className="w-6 h-6 rounded bg-amber-500/10 text-amber-500 flex items-center justify-center">
                             <Mic size={13} />
                           </div>
-                          <span className="text-xs font-bold text-slate-900">3. Interview Transcript</span>
+                          <span className="text-xs font-bold text-text">3. Interview Transcript</span>
                         </div>
-                        <span className="text-[11px] text-slate-400">File or text</span>
+                        <span className="text-[11px] text-muted">File or text</span>
                       </div>
 
                       {/* Dropzone */}
@@ -416,8 +416,8 @@ export function IntakeForm() {
                         onClick={() => transcriptFileRef.current?.click()}
                         className={`cursor-pointer rounded-xl border-2 border-dashed p-3.5 text-center transition-all ${
                           dragOver === 'transcript'
-                            ? 'border-amber-500 bg-amber-50/50'
-                            : 'border-amber-200/70 hover:border-amber-400 bg-amber-50/20 hover:bg-amber-50/40'
+                            ? 'border-amber-500 bg-amber-500/10'
+                            : 'border-border hover:border-amber-500/60 bg-surface-2/40 hover:bg-surface-2'
                         }`}
                       >
                         <input
@@ -429,11 +429,11 @@ export function IntakeForm() {
                         />
 
                         {transcriptFile ? (
-                          <div className="flex items-center justify-between bg-white rounded-md px-3 py-2 text-[12px] text-amber-600 border border-amber-100 shadow-xs">
+                          <div className="flex items-center justify-between bg-surface rounded-md px-3 py-2 text-[12px] text-amber-500 border border-border shadow-xs">
                             <div className="flex items-center gap-2 truncate">
                               <FileText size={14} className="flex-shrink-0" />
                               <span className="truncate font-medium">{transcriptFile.name}</span>
-                              <span className="text-[10px] text-slate-400">({(transcriptFile.size / 1024).toFixed(1)} KB)</span>
+                              <span className="text-[10px] text-muted">({(transcriptFile.size / 1024).toFixed(1)} KB)</span>
                             </div>
                             <button
                               type="button"
@@ -442,7 +442,7 @@ export function IntakeForm() {
                                 setTranscriptFile(null);
                                 if (transcriptFileRef.current) transcriptFileRef.current.value = '';
                               }}
-                              className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                              className="p-1 hover:bg-surface-2 rounded text-muted hover:text-text"
                             >
                               <X size={14} />
                             </button>
@@ -450,23 +450,23 @@ export function IntakeForm() {
                         ) : (
                           <div className="flex flex-col items-center gap-1">
                             <UploadCloud size={18} className="text-amber-500" />
-                            <span className="text-xs font-medium text-slate-700">Drag and drop your file here, or click to browse</span>
-                            <span className="text-[11px] text-slate-400">.txt, .pdf, .docx</span>
+                            <span className="text-xs font-medium text-text">Drag and drop your file here, or click to browse</span>
+                            <span className="text-[11px] text-muted">.txt, .pdf, .docx</span>
                           </div>
                         )}
                       </div>
 
                       <div className="relative flex py-2 items-center">
-                        <div className="flex-grow border-t border-slate-100"></div>
-                        <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">OR</span>
-                        <div className="flex-grow border-t border-slate-100"></div>
+                        <div className="flex-grow border-t border-border"></div>
+                        <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted font-semibold">OR</span>
+                        <div className="flex-grow border-t border-border"></div>
                       </div>
 
                       <textarea
                         value={transcriptText}
                         onChange={(e) => setTranscriptText(e.target.value)}
                         placeholder="Paste transcript text here..."
-                        className="w-full bg-slate-50/40 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all resize-y min-h-[64px]"
+                        className="w-full bg-surface-2/50 border border-border rounded-lg px-3 py-2 text-xs text-text placeholder:text-muted focus:outline-none focus:bg-surface focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 transition-all resize-y min-h-[64px]"
                       />
                     </div>
                   </div>
@@ -481,9 +481,9 @@ export function IntakeForm() {
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
-                  className="mt-4 flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs"
+                  className="mt-4 flex items-center gap-2 p-3 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs"
                 >
-                  <AlertCircle size={15} className="flex-shrink-0 text-red-500" />
+                  <AlertCircle size={15} className="flex-shrink-0" />
                   <span>{errorMessage}</span>
                 </motion.div>
               )}
@@ -492,13 +492,13 @@ export function IntakeForm() {
             {/* Bottom Actions & Requirement Notice */}
             <div className="mt-5 space-y-3">
               {/* Info notice bar */}
-              <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 text-xs text-slate-600 text-center">
-                <Info size={14} className="text-slate-400 flex-shrink-0" />
+              <div className="bg-surface-2 border border-border rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 text-xs text-muted text-center transition-colors">
+                <Info size={14} className="text-muted flex-shrink-0" />
                 <span>
                   Please provide{' '}
-                  <strong className="text-blue-600 font-semibold">Target Role</strong>,{' '}
-                  <strong className="text-emerald-600 font-semibold">Resume</strong>,{' '}
-                  <strong className="text-amber-600 font-semibold">Interview Transcript</strong> to begin evaluation.
+                  <strong className="text-accent-technical font-semibold">Target Role</strong>,{' '}
+                  <strong className="text-emerald-500 font-semibold">Resume</strong>,{' '}
+                  <strong className="text-amber-500 font-semibold">Interview Transcript</strong> to begin evaluation.
                 </span>
               </div>
 
@@ -506,7 +506,7 @@ export function IntakeForm() {
               <button
                 onClick={handleBuild}
                 disabled={!canBuild || building}
-                className="w-full bg-[#0F172A] hover:bg-[#1E293B] active:scale-[0.995] text-white py-3.5 px-6 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-text hover:opacity-90 active:scale-[0.995] text-bg py-3.5 px-6 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {building ? (
                   <>

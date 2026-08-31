@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile, status
 
 from app.schemas import (
     AgentOpinion,
@@ -21,6 +21,7 @@ from app.schemas import (
     EvaluateRequest,
     FinalDecision,
     SynthesizeRequest,
+    VoiceSynthesizeRequest,
 )
 from app.services.debate import run_debate
 from app.services.file_extractor import (
@@ -34,6 +35,7 @@ from app.services.profile_builder import (
     validate_and_normalize_inputs,
 )
 from app.services.synthesis import synthesize_decision
+from app.services.voice import synthesize_speech
 
 logger = logging.getLogger(__name__)
 
@@ -274,3 +276,46 @@ async def synthesize(request: SynthesizeRequest) -> dict:
         result["warnings"] = warnings
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# 4. Voice Synthesis (Persona Text-to-Speech)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/voice/synthesize")
+async def synthesize_voice_endpoint(request: VoiceSynthesizeRequest):
+    """Synthesize speech audio for a specific persona debate turn.
+
+    Request body: { agentId: "skeptic", text: "..." }
+    Returns:
+        - audio/mpeg binary response if backend provider is active
+        - JSON metadata with speech synthesis parameters for browser fallback
+    """
+    try:
+        audio_bytes, metadata = await synthesize_speech(
+            agent_id=request.agent_id,
+            text=request.text,
+        )
+    except ValueError as val_err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(val_err),
+        ) from val_err
+    except Exception as exc:
+        logger.exception("Voice synthesis unexpected error")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Voice synthesis failed: {exc}",
+        ) from exc
+
+    if audio_bytes is not None:
+        return Response(
+            content=audio_bytes,
+            media_type="audio/mpeg",
+            headers={
+                "Content-Disposition": f'inline; filename="{request.agent_id}_turn.mp3"',
+            },
+        )
+
+    return metadata

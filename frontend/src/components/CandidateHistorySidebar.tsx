@@ -31,8 +31,9 @@ export function CandidateHistorySidebar() {
       {/* Toggle button */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-surface border border-white/[0.08] border-l-0 rounded-r-lg p-2 hover:bg-surface-2 transition-colors no-print"
+        className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-surface border border-border border-l-0 rounded-r-lg p-2 hover:bg-surface-2 transition-colors shadow-xs no-print cursor-pointer"
         title={open ? 'Close history' : 'Open history'}
+        aria-label="Toggle candidate evaluation history sidebar"
       >
         {open ? <PanelLeftClose size={18} className="text-muted" /> : <PanelLeftOpen size={18} className="text-muted" />}
       </button>
@@ -55,9 +56,9 @@ export function CandidateHistorySidebar() {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 bottom-0 w-[260px] bg-surface border-r border-white/[0.08] z-30 flex flex-col no-print"
+              className="fixed left-0 top-0 bottom-0 w-[260px] bg-surface border-r border-border z-30 flex flex-col no-print shadow-xl"
             >
-              <div className="px-4 py-4 border-b border-white/[0.06] flex items-center gap-2">
+              <div className="px-4 py-4 border-b border-border flex items-center gap-2">
                 <Clock size={16} className="text-muted" />
                 <h3 className="text-[13px] font-semibold text-text">Evaluation History</h3>
               </div>
@@ -73,7 +74,7 @@ export function CandidateHistorySidebar() {
                       key={entry.id}
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="group bg-surface-2 rounded-md border border-white/[0.06] p-3 cursor-pointer hover:border-white/[0.12] transition-colors"
+                      className="group bg-surface-2 rounded-lg border border-border p-3 cursor-pointer hover:border-accent-technical/40 transition-colors"
                       onClick={() => handleLoad(entry)}
                     >
                       <div className="flex items-start justify-between gap-2">

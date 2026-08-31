@@ -1,22 +1,23 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
-        bg: '#F8FAFC',
-        surface: '#FFFFFF',
-        'surface-2': '#F1F5F9',
-        border: '#E2E8F0',
-        text: '#0F172A',
-        muted: '#64748B',
-        'accent-technical': '#2563EB',
-        'accent-culture': '#10B981',
-        'accent-hm': '#F59E0B',
-        'accent-skeptic': '#EF4444',
-        success: '#10B981',
-        warning: '#F59E0B',
-        danger: '#EF4444',
+        bg: 'var(--bg)',
+        surface: 'var(--surface)',
+        'surface-2': 'var(--surface-2)',
+        border: 'var(--border)',
+        text: 'var(--text)',
+        muted: 'var(--muted)',
+        'accent-technical': 'var(--accent-technical)',
+        'accent-culture': 'var(--accent-culture)',
+        'accent-hm': 'var(--accent-hm)',
+        'accent-skeptic': 'var(--accent-skeptic)',
+        success: 'var(--success)',
+        warning: 'var(--warning)',
+        danger: 'var(--danger)',
       },
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],

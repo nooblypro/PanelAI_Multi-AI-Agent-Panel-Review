@@ -19,15 +19,15 @@ function SkillChip({ skill, index }: { skill: CandidateProfile['skills'][number]
     >
       <button
         onClick={() => setShowTooltip(!showTooltip)}
-        className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors"
+        className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium bg-surface-2 border border-border hover:border-accent-technical/40 transition-colors"
       >
-        {skill.name}
+        <span className="text-text">{skill.name}</span>
         <span
           className="text-[9px] font-semibold px-1 py-0.5 rounded uppercase"
           style={{
             backgroundColor:
-              skill.source === 'resume' ? 'rgba(37,99,235,0.1)' : 'rgba(16,185,129,0.1)',
-            color: skill.source === 'resume' ? '#2563EB' : '#10B981',
+              skill.source === 'resume' ? 'rgba(37,99,235,0.15)' : 'rgba(16,185,129,0.15)',
+            color: skill.source === 'resume' ? '#3B82F6' : '#10B981',
           }}
         >
           {skill.source}
@@ -38,7 +38,7 @@ function SkillChip({ skill, index }: { skill: CandidateProfile['skills'][number]
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15 }}
-          className="absolute bottom-full left-0 mb-2 z-20 w-64 bg-white border border-slate-200 rounded-lg p-3 shadow-xl"
+          className="absolute bottom-full left-0 mb-2 z-20 w-64 bg-surface border border-border rounded-lg p-3 shadow-xl"
         >
           <p className="text-[11px] text-muted leading-relaxed font-mono">{skill.evidence}</p>
         </motion.div>
@@ -65,16 +65,16 @@ function ExperienceTimeline({
           className="relative pl-5"
         >
           {/* Timeline dot + line */}
-          <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-blue-500" />
+          <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full bg-accent-technical" />
           {i < experience.length - 1 && (
-            <div className="absolute left-[3px] top-4 bottom-[-12px] w-px bg-slate-200" />
+            <div className="absolute left-[3px] top-4 bottom-[-12px] w-px bg-border" />
           )}
           <div>
             <h4 className="text-[13px] font-semibold text-text">{exp.company}</h4>
             <p className="text-[12px] text-muted">{exp.title} · {exp.duration}</p>
             <ul className="mt-1.5 space-y-1">
               {exp.highlights.map((h, j) => (
-                <li key={j} className="text-[12px] text-slate-700 flex items-start gap-1.5">
+                <li key={j} className="text-[12px] text-text/80 flex items-start gap-1.5">
                   <span className="text-muted mt-0.5">·</span>
                   <span>{h}</span>
                 </li>
@@ -99,11 +99,11 @@ function ClaimQuote({
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.25 + index * 0.05, duration: 0.25 }}
-      className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-start justify-between gap-3 group hover:border-slate-300 transition-colors"
+      className="p-3.5 rounded-lg bg-surface-2 border border-border flex items-start justify-between gap-3 group hover:border-accent-technical/40 transition-colors"
     >
       <div className="flex items-start gap-2.5 flex-1 min-w-0">
-        <Quote size={14} className="text-red-500 flex-shrink-0 mt-0.5 opacity-60" />
-        <p className="text-[12px] text-slate-800 italic leading-relaxed font-mono">
+        <Quote size={14} className="text-accent-skeptic flex-shrink-0 mt-0.5 opacity-70" />
+        <p className="text-[12px] text-text italic leading-relaxed font-mono">
           "{claim.text}"
         </p>
       </div>
@@ -111,8 +111,8 @@ function ClaimQuote({
         className="text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase flex-shrink-0"
         style={{
           backgroundColor:
-            claim.source === 'resume' ? 'rgba(37,99,235,0.1)' : 'rgba(16,185,129,0.1)',
-          color: claim.source === 'resume' ? '#2563EB' : '#10B981',
+            claim.source === 'resume' ? 'rgba(37,99,235,0.15)' : 'rgba(16,185,129,0.15)',
+          color: claim.source === 'resume' ? '#3B82F6' : '#10B981',
         }}
       >
         {claim.source}
@@ -172,22 +172,22 @@ export function ProfileView() {
                   setEditingName(false);
                 }
               }}
-              className="text-2xl font-bold text-text bg-white border border-slate-300 rounded px-2 py-1 focus:outline-none focus:border-blue-500"
+              className="text-2xl font-bold text-text bg-surface border border-border rounded px-2 py-1 focus:outline-none focus:border-accent-technical"
             />
           ) : (
-            <h1 className="text-2xl font-bold font-serif text-slate-900">{profile.name}</h1>
+            <h1 className="text-2xl font-bold font-serif text-text">{profile.name}</h1>
           )}
           <button
             onClick={() => {
               setNameInput(profile.name);
               setEditingName(!editingName);
             }}
-            className="text-muted hover:text-text transition-colors p-1"
+            className="text-muted hover:text-text transition-colors p-1 cursor-pointer"
           >
             <Pencil size={15} />
           </button>
         </div>
-        <span className="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
+        <span className="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-accent-technical/10 text-accent-technical border border-accent-technical/20">
           {formatCleanRole(profile.targetRole)}
         </span>
         <p className="text-[12px] text-muted mt-3 max-w-2xl">
@@ -202,10 +202,10 @@ export function ProfileView() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05, duration: 0.3 }}
-          className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5"
+          className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
         >
-          <h3 className="text-[13px] font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <span className="w-1 h-4 rounded-full bg-blue-600" />
+          <h3 className="text-[13px] font-semibold text-text mb-3 flex items-center gap-2">
+            <span className="w-1 h-4 rounded-full bg-accent-technical" />
             Skills
           </h3>
           <div className="flex flex-wrap gap-2">
@@ -220,10 +220,10 @@ export function ProfileView() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.3 }}
-          className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5"
+          className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
         >
-          <h3 className="text-[13px] font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <Briefcase size={14} className="text-amber-500" />
+          <h3 className="text-[13px] font-semibold text-text mb-4 flex items-center gap-2">
+            <Briefcase size={14} className="text-accent-hm" />
             Experience
           </h3>
           <ExperienceTimeline experience={profile.experience} index={0} />
@@ -234,10 +234,10 @@ export function ProfileView() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.3 }}
-          className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5"
+          className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
         >
-          <h3 className="text-[13px] font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <GraduationCap size={14} className="text-emerald-500" />
+          <h3 className="text-[13px] font-semibold text-text mb-4 flex items-center gap-2">
+            <GraduationCap size={14} className="text-accent-culture" />
             Education
           </h3>
           <div className="space-y-3">
@@ -248,7 +248,7 @@ export function ProfileView() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + i * 0.05, duration: 0.25 }}
               >
-                <h4 className="text-[13px] font-semibold text-slate-900">{edu.school}</h4>
+                <h4 className="text-[13px] font-semibold text-text">{edu.school}</h4>
                 <p className="text-[12px] text-muted">{edu.degree}{edu.year ? ` · ${edu.year}` : ''}</p>
               </motion.div>
             ))}

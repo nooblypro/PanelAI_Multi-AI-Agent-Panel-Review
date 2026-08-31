@@ -70,7 +70,7 @@ function AgentCard({
   if (!isDone) {
     return (
       <div
-        className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 overflow-hidden relative"
+        className="bg-surface rounded-xl border border-border shadow-xs p-5 overflow-hidden relative transition-colors"
         style={{ borderLeft: `4px solid ${color}` }}
       >
         <div className="flex items-center gap-2.5 mb-4">
@@ -78,7 +78,7 @@ function AgentCard({
             <Icon size={18} style={{ color }} />
           </div>
           <div>
-            <h3 className="text-[13px] font-semibold text-slate-900">{name}</h3>
+            <h3 className="text-[13px] font-semibold text-text">{name}</h3>
             <p className="text-[11px] text-muted flex items-center gap-1">
               <Loader2 size={10} className="animate-spin" />
               is reviewing…
@@ -100,7 +100,7 @@ function AgentCard({
   if (isDone && !allDone) {
     return (
       <div
-        className="bg-white rounded-xl border border-slate-200 shadow-xs p-5 overflow-hidden relative"
+        className="bg-surface rounded-xl border border-border shadow-xs p-5 overflow-hidden relative transition-colors"
         style={{ borderLeft: `4px solid ${color}` }}
       >
         <div className="flex items-center gap-2.5 mb-4">
@@ -108,19 +108,19 @@ function AgentCard({
             <Icon size={18} style={{ color }} />
           </div>
           <div>
-            <h3 className="text-[13px] font-semibold text-slate-900">{name}</h3>
+            <h3 className="text-[13px] font-semibold text-text">{name}</h3>
             <p className="text-[11px] text-muted flex items-center gap-1">
-              <Check size={11} className="text-emerald-600" />
+              <Check size={11} className="text-emerald-500" />
               done, waiting on others
             </p>
           </div>
         </div>
         <div className="blur-mask space-y-3">
-          <div className="h-3 bg-slate-100 rounded" />
-          <div className="h-3 bg-slate-100 rounded w-5/6" />
-          <div className="h-3 bg-slate-100 rounded w-4/6" />
-          <div className="h-12 bg-slate-100 rounded" />
-          <div className="h-12 bg-slate-100 rounded" />
+          <div className="h-3 bg-surface-2 rounded" />
+          <div className="h-3 bg-surface-2 rounded w-5/6" />
+          <div className="h-3 bg-surface-2 rounded w-4/6" />
+          <div className="h-12 bg-surface-2 rounded" />
+          <div className="h-12 bg-surface-2 rounded" />
         </div>
       </div>
     );
@@ -134,7 +134,7 @@ function AgentCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.12, duration: 0.3 }}
-      className="bg-white rounded-xl border border-slate-200 shadow-xs p-5"
+      className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
       style={{ borderLeft: `4px solid ${color}` }}
     >
       <div className="flex items-center gap-2.5 mb-4">
@@ -142,7 +142,7 @@ function AgentCard({
           <Icon size={18} style={{ color }} />
         </div>
         <div className="flex-1">
-          <h3 className="text-[13px] font-semibold text-slate-900">{name}</h3>
+          <h3 className="text-[13px] font-semibold text-text">{name}</h3>
           <p className="text-[11px] text-muted">Independent Review</p>
         </div>
         <VerdictBadge verdict={opinion.verdict} size="sm" />
@@ -151,20 +151,20 @@ function AgentCard({
       {/* Score + Confidence */}
       <div className="flex items-center gap-4 mb-4">
         <div>
-          <span className="text-2xl font-bold text-slate-900">{opinion.score}</span>
+          <span className="text-2xl font-bold text-text">{opinion.score}</span>
           <span className="text-sm text-muted">/10</span>
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-muted uppercase tracking-wide">Confidence</span>
-            <span className="text-[11px] font-medium text-slate-700">{opinion.confidence}%</span>
+            <span className="text-[11px] font-medium text-text/80">{opinion.confidence}%</span>
           </div>
           <ConfidenceBar value={opinion.confidence} color={color} />
         </div>
       </div>
 
       {/* Summary */}
-      <p className="text-[12px] text-slate-700 leading-relaxed mb-4">{formatCleanSummary(opinion.summary)}</p>
+      <p className="text-[12px] text-text/90 leading-relaxed mb-4">{formatCleanSummary(opinion.summary)}</p>
 
       {/* Evidence */}
       <div className="space-y-2.5">
@@ -209,12 +209,12 @@ export function IndependentReview() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="mb-6 flex items-center gap-3 bg-white rounded-xl border border-slate-200 shadow-xs px-4 py-3"
+        className="mb-6 flex items-center gap-3 bg-surface rounded-xl border border-border shadow-xs px-4 py-3 transition-colors"
       >
-        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
-          <Lock size={16} className="text-blue-600" />
+        <div className="w-8 h-8 rounded-full bg-accent-technical/10 flex items-center justify-center flex-shrink-0">
+          <Lock size={16} className="text-accent-technical" />
         </div>
-        <p className="text-[13px] text-slate-700">
+        <p className="text-[13px] text-text/80">
           Each agent is evaluating independently and cannot see the other agents' conclusions at this stage.
         </p>
       </motion.div>

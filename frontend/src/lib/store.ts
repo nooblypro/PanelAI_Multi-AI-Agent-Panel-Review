@@ -33,6 +33,7 @@ interface PipelineState {
   startDebate: () => Promise<void>;
   revealNextTurn: () => void;
   revealAllTurns: () => void;
+  setRevealedTurns: (turns: number) => void;
   startVerdict: () => Promise<void>;
   reset: () => void;
   loadFromHistory: (data: {
@@ -146,6 +147,12 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   },
 
   revealAllTurns: () => set({ revealedTurns: get().debateTurns.length }),
+
+  setRevealedTurns: (turns: number) => {
+    const total = get().debateTurns.length;
+    const clamped = Math.min(Math.max(0, turns), total);
+    set({ revealedTurns: clamped });
+  },
 
   startVerdict: async () => {
     const profile = get().profile;
