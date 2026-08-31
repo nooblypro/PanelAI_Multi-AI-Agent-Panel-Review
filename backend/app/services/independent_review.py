@@ -179,11 +179,13 @@ def _clamp(value: int, lo: int, hi: int) -> int:
     return max(lo, min(hi, value))
 
 
+from app.services.profile_builder import clean_target_role
+
 def _mock_opinion(agent_id: AgentId, profile: CandidateProfile | None = None) -> AgentOpinion:
     """Return a persona-tailored fallback opinion based on candidate profile evidence."""
     now = datetime.now(timezone.utc).isoformat()
     name = profile.name if profile else "Candidate"
-    target_role = profile.target_role if profile else "Target Role"
+    target_role = clean_target_role(profile.target_role) if profile else "Target Role"
 
     skills_text = ", ".join(s.name for s in profile.skills[:4]) if (profile and profile.skills) else "Distributed systems, Python, TypeScript"
     first_exp = profile.experience[0] if (profile and profile.experience) else None
@@ -198,8 +200,8 @@ def _mock_opinion(agent_id: AgentId, profile: CandidateProfile | None = None) ->
             confidence=75,
             verdict="yes",
             summary=(
-                f"[Fallback assessment] {name} displays strong technical foundations relevant to {target_role}, "
-                f"specifically with competencies in {skills_text}. Architecture claims align well with requirements."
+                f"[Fallback assessment] {name} displays strong technical foundations for {target_role} in {skills_text}. "
+                f"Architecture claims align well with core role demands."
             ),
             evidence=[
                 Evidence(

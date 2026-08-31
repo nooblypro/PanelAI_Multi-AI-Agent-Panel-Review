@@ -9,6 +9,20 @@ import { EvidenceQuoteBlock } from './EvidenceQuoteBlock';
 
 const AGENT_IDS: AgentId[] = ['technical', 'culture', 'hiring_manager', 'skeptic'];
 
+function formatCleanSummary(summary?: string): string {
+  if (!summary) return 'Independent evaluation completed.';
+  if (summary.includes('Job Description:') || summary.includes('About the Role') || summary.length > 240) {
+    const sentences = summary.split(/\.\s+/).filter(
+      (s) => !s.includes('Job Description:') && !s.includes('About the Role') && !s.includes("What You'll Do") && s.trim().length > 10
+    );
+    if (sentences.length > 0) {
+      const trimmed = sentences.slice(0, 2).join('. ');
+      return trimmed + (trimmed.endsWith('.') ? '' : '.');
+    }
+  }
+  return summary;
+}
+
 function AgentCard({
   agentId,
   opinion,
@@ -149,7 +163,7 @@ function AgentCard({
       </div>
 
       {/* Summary */}
-      <p className="text-[12px] text-text/80 leading-relaxed mb-4">{opinion.summary}</p>
+      <p className="text-[12px] text-text/80 leading-relaxed mb-4">{formatCleanSummary(opinion.summary)}</p>
 
       {/* Evidence */}
       <div className="space-y-2.5">

@@ -134,11 +134,13 @@ def _parse_turns(raw_list: list) -> list[DebateTurn]:
 # ---------------------------------------------------------------------------
 
 
+from app.services.profile_builder import clean_target_role
+
 def _mock_debate(opinions: list[AgentOpinion], profile: CandidateProfile | None = None) -> list[DebateTurn]:
     """Return context-aware structured debate turns when LLM call encounters rate limits."""
     now = datetime.now(timezone.utc).isoformat()
     name = profile.name if profile else "Candidate"
-    target_role = profile.target_role if profile else "Target Role"
+    target_role = clean_target_role(profile.target_role) if profile else "Target Role"
     skills_text = ", ".join(s.name for s in profile.skills[:3]) if (profile and profile.skills) else "Distributed Systems and Backend Architecture"
     key_claim = profile.claims[0].text if (profile and profile.claims) else "Architected high-throughput infrastructure"
 

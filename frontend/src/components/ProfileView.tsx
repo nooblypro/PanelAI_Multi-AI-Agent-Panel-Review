@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Pencil, ArrowRight, Briefcase, GraduationCap, Quote, Search } from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
 import type { CandidateProfile } from '../types';
+import { formatCleanRole } from './VerdictReport';
 
 function SkillChip({ skill, index }: { skill: CandidateProfile['skills'][number]; index: number }) {
   const [showTooltip, setShowTooltip] = useState(false);
@@ -181,7 +182,7 @@ export function ProfileView() {
           </button>
         </div>
         <span className="inline-block text-xs font-semibold px-3 py-1 rounded-full bg-accent-technical/10 text-accent-technical border border-accent-technical/20">
-          {profile.targetRole}
+          {formatCleanRole(profile.targetRole)}
         </span>
         <p className="text-[12px] text-muted mt-3 max-w-2xl">
           This is the shared fact-base. All four agents read only from this profile — no other context is passed downstream.

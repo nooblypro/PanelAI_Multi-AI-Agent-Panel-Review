@@ -47,36 +47,39 @@ CRITICAL METHODOLOGY RULES:
    - "moveDown": 2 specific risks or verified gaps that would downgrade the recommendation.
 
 6. AGENT PERSPECTIVE WEIGHTS:
-   - Provide relative influence weights (0.0-1.0, summing to 1.0) of the 4 agents based on evidence persuasiveness in debate.
+5. STRICT BREVITY & CONCISENESS MANDATE:
+   - All text fields MUST be strictly concise (maximum 3-5 lines / sentences).
+   - NEVER output long walls of text, uninterrupted multi-paragraph explanations, or echoed job descriptions.
+   - Deliver crisp, executive-ready insights only.
 
 OUTPUT FORMAT — respond with ONLY a valid JSON object matching this exact structure:
 {
   "recommendation": "<Strong Hire|Hire|Hold|No Hire>",
   "confidenceLevel": <int 0-100>,
-  "confidenceRationale": "<1-2 sentences explaining the confidence level>",
+  "confidenceRationale": "<strictly 1 concise sentence explaining confidence (max 20 words)>",
   "overallScore": <float 1.0-10.0, exact sum of criteria weighted scores>,
   "criteriaScores": [
-    { "name": "Technical ability", "score": <float 1.0-10.0>, "weight": 0.30, "weightedScore": <float>, "rationale": "<sentence>" },
-    { "name": "Agentic AI / LLM experience", "score": <float 1.0-10.0>, "weight": 0.30, "weightedScore": <float>, "rationale": "<sentence>" },
-    { "name": "Production engineering", "score": <float 1.0-10.0>, "weight": 0.20, "weightedScore": <float>, "rationale": "<sentence>" },
-    { "name": "Problem solving", "score": <float 1.0-10.0>, "weight": 0.10, "weightedScore": <float>, "rationale": "<sentence>" },
-    { "name": "Communication / collaboration", "score": <float 1.0-10.0>, "weight": 0.10, "weightedScore": <float>, "rationale": "<sentence>" }
+    { "name": "Technical ability", "score": <float 1.0-10.0>, "weight": 0.30, "weightedScore": <float>, "rationale": "<strictly 1 concise sentence (max 15 words)>" },
+    { "name": "Agentic AI / LLM experience", "score": <float 1.0-10.0>, "weight": 0.30, "weightedScore": <float>, "rationale": "<strictly 1 concise sentence (max 15 words)>" },
+    { "name": "Production engineering", "score": <float 1.0-10.0>, "weight": 0.20, "weightedScore": <float>, "rationale": "<strictly 1 concise sentence (max 15 words)>" },
+    { "name": "Problem solving", "score": <float 1.0-10.0>, "weight": 0.10, "weightedScore": <float>, "rationale": "<strictly 1 concise sentence (max 15 words)>" },
+    { "name": "Communication / collaboration", "score": <float 1.0-10.0>, "weight": 0.10, "weightedScore": <float>, "rationale": "<strictly 1 concise sentence (max 15 words)>" }
   ],
-  "reasoning": "<3-5 sentences synthesizing why this decision was reached>",
+  "reasoning": "<strictly 3-4 concise sentences (40-60 words total, maximum 4-5 lines of text). Never write huge paragraphs or copy raw job descriptions.>",
   "weightBreakdown": [
-    { "agentId": "technical", "weight": <float 0.0-1.0>, "rationale": "<sentence>" },
-    { "agentId": "culture", "weight": <float 0.0-1.0>, "rationale": "<sentence>" },
-    { "agentId": "hiring_manager", "weight": <float 0.0-1.0>, "rationale": "<sentence>" },
-    { "agentId": "skeptic", "weight": <float 0.0-1.0>, "rationale": "<sentence>" }
+    { "agentId": "technical", "weight": <float 0.0-1.0>, "rationale": "<1 concise sentence>" },
+    { "agentId": "culture", "weight": <float 0.0-1.0>, "rationale": "<1 concise sentence>" },
+    { "agentId": "hiring_manager", "weight": <float 0.0-1.0>, "rationale": "<1 concise sentence>" },
+    { "agentId": "skeptic", "weight": <float 0.0-1.0>, "rationale": "<1 concise sentence>" }
   ],
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "concerns": ["<concern 1>", "<concern 2>"],
+  "strengths": ["<concise 1-sentence bullet 1>", "<concise 1-sentence bullet 2>", "<concise 1-sentence bullet 3>"],
+  "concerns": ["<concise 1-sentence bullet 1>", "<concise 1-sentence bullet 2>"],
   "unresolvedDisagreements": [
-    { "agents": ["<agentId>", "<agentId>"], "topic": "<topic>", "description": "<description>" }
+    { "agents": ["<agentId>", "<agentId>"], "topic": "<topic>", "description": "<1 concise sentence>" }
   ],
   "whatWouldChange": {
-    "moveUp": ["<concrete evidence that would upgrade decision 1>", "<concrete evidence 2>"],
-    "moveDown": ["<concrete risk that would downgrade decision 1>", "<concrete risk 2>"]
+    "moveUp": ["<concise 1-sentence action 1>", "<concise 1-sentence action 2>"],
+    "moveDown": ["<concise 1-sentence risk 1>", "<concise 1-sentence risk 2>"]
   }
 }
 

@@ -26,6 +26,7 @@ from app.schemas import (
     WhatWouldChange,
 )
 from app.services.llm_client import LLMError, generate_json
+from app.services.profile_builder import clean_target_role
 
 logger = logging.getLogger(__name__)
 
@@ -101,46 +102,36 @@ def _parse_decision(raw: dict, opinions: list[AgentOpinion]) -> FinalDecision:
             criteria_map[rc["name"].strip().lower()] = rc
 
     criteria_scores: list[CriterionScore] = []
-    for crit_name, crit_weight in CRITERIA_DEFINITIONS:
-        key = crit_name.lower()
-        matched = criteria_map.get(key)
-        if not matched:
-            # Fallback search for partial match
-            for k, v in criteria_map.items():
-                if key in k or k in key:
-                    matched = v
-                    break
-
-        if matched:
-            try:
-                score_val = float(matched.get("score", 7.0))
-            except (ValueError, TypeError):
-                score_val = 7.0
-            rationale_val = str(matched.get("rationale", f"Evaluated based on candidate profile evidence."))
+    for name_crit, default_weight in CRITERIA_DEFINITIONS:
+        matched = criteria_map.get(name_crit.lower())
+        if matched and "score" in matched:
+            raw_score = float(matched["score"])
+            score_val = max(1.0, min(10.0, round(raw_score, 1)))
+            weight_val = default_weight
+            rationale_val = str(matched.get("rationale", f"Assessed across {name_crit.lower()} requirements."))
         else:
-            # Derive default score from opinion average
-            avg_op = sum(op.score for op in opinions) / max(len(opinions), 1)
-            score_val = round(avg_op, 1)
-            rationale_val = f"Evaluated from panel evidence across review rounds."
+            # Fallback based on opinion average for this dimension
+            avg_opinion_score = sum(op.score for op in opinions) / max(len(opinions), 1)
+            score_val = max(1.0, min(10.0, round(avg_opinion_score, 1)))
+            weight_val = default_weight
+            rationale_val = f"Synthesized from panel consensus on {name_crit.lower()}."
 
-        clamped_score = max(1.0, min(10.0, round(score_val, 1)))
-        weighted_val = round(clamped_score * crit_weight, 2)
-
+        weighted_score = round(score_val * weight_val, 2)
         criteria_scores.append(
             CriterionScore(
-                name=crit_name,
-                score=clamped_score,
-                weight=crit_weight,
-                weighted_score=weighted_val,
+                name=name_crit,
+                score=score_val,
+                weight=weight_val,
+                weighted_score=weighted_score,
                 rationale=rationale_val,
             )
         )
 
-    # 2. Mathematically exact overall score
+    # 2. Derive overall score mathematically from the sum of weighted scores
     calculated_overall = round(sum(cs.weighted_score for cs in criteria_scores), 1)
 
-    # 3. Recommendation determination / validation
-    rec = raw.get("recommendation")
+    # 3. Verify recommendation maps to thresholds
+    rec = raw.get("recommendation", "")
     if rec not in valid_recs:
         if calculated_overall >= 8.5:
             rec = "Strong Hire"
@@ -151,81 +142,60 @@ def _parse_decision(raw: dict, opinions: list[AgentOpinion]) -> FinalDecision:
         else:
             rec = "No Hire"
 
-    # 4. Confidence level and explainable rationale
-    confidence = max(0, min(100, int(raw.get("confidenceLevel", 70))))
-    conf_rationale = raw.get("confidenceRationale")
-    if not conf_rationale or not str(conf_rationale).strip():
-        if confidence >= 80:
-            conf_rationale = "High confidence backed by comprehensive concrete evidence across core evaluation dimensions."
-        elif confidence >= 60:
-            conf_rationale = "Moderate confidence with strong technical signals, balanced by specific unverified experience gaps."
-        else:
-            conf_rationale = "Lower confidence due to significant divergence in agent assessments and missing primary domain evidence."
-    else:
-        conf_rationale = str(conf_rationale).strip()
+    # 4. Confidence & Rationale
+    try:
+        confidence = max(0, min(100, int(raw.get("confidenceLevel", 75))))
+    except (ValueError, TypeError):
+        confidence = 75
 
-    # 5. Agent Perspective Weights (for backward compatibility and agent contribution audit)
+    conf_rationale = str(
+        raw.get(
+            "confidenceRationale",
+            "Confidence reflects verified evidence consistency across independent evaluator scoring.",
+        )
+    )
+
+    # 5. Weight breakdown
     weight_breakdown = []
-    for wb in raw.get("weightBreakdown", []):
-        if isinstance(wb, dict):
-            raw_w = wb.get("weight", 0.25)
-            try:
-                w_val = float(raw_w)
-            except (ValueError, TypeError):
-                w_val = 0.25
+    for item in raw.get("weightBreakdown", []):
+        if isinstance(item, dict) and item.get("agentId") in ("technical", "culture", "hiring_manager", "skeptic"):
             weight_breakdown.append(
                 WeightBreakdown(
-                    agent_id=wb.get("agentId", "technical"),
-                    weight=w_val,
-                    rationale=str(wb.get("rationale", "")),
+                    agent_id=item["agentId"],
+                    weight=float(item.get("weight", 0.25)),
+                    rationale=str(item.get("rationale", "Contributed evidence-based evaluation.")),
                 )
             )
-
-    seen = {wb.agent_id for wb in weight_breakdown}
-    for aid in ("technical", "culture", "hiring_manager", "skeptic"):
-        if aid not in seen:
-            weight_breakdown.append(
-                WeightBreakdown(
-                    agent_id=aid,
-                    weight=0.25,
-                    rationale="Evaluator perspective contribution to panel deliberation.",
-                )
+    if not weight_breakdown:
+        weight_breakdown = [
+            WeightBreakdown(
+                agent_id=aid,
+                weight=0.25,
+                rationale="Equal weighting across independent personas in synthesis.",
             )
+            for aid in ("technical", "culture", "hiring_manager", "skeptic")
+        ]
 
-    # 6. Unresolved Disagreements & Uncertainty Handling
+    # 6. Unresolved Disagreements
     unresolved = []
     for ud in raw.get("unresolvedDisagreements", []):
-        if isinstance(ud, dict):
+        if isinstance(ud, dict) and "agents" in ud and "topic" in ud:
             unresolved.append(
                 UnresolvedDisagreement(
-                    agents=ud.get("agents", []),
-                    topic=str(ud.get("topic", "")),
+                    agents=[str(a) for a in ud.get("agents", [])],
+                    topic=str(ud.get("topic", "Assessment nuance")),
                     description=str(ud.get("description", "")),
                 )
             )
 
-    # 7. What Would Change the Decision?
-    raw_wwc = raw.get("whatWouldChange", {})
-    if isinstance(raw_wwc, dict):
-        move_up = raw_wwc.get("moveUp", [])
-        move_down = raw_wwc.get("moveDown", [])
-        if not isinstance(move_up, list):
-            move_up = [str(move_up)]
-        if not isinstance(move_down, list):
-            move_down = [str(move_down)]
-    else:
-        move_up = []
-        move_down = []
-
+    # 7. What Would Change
+    wwc_raw = raw.get("whatWouldChange", {})
+    move_up = wwc_raw.get("moveUp", []) if isinstance(wwc_raw, dict) else []
+    move_down = wwc_raw.get("moveDown", []) if isinstance(wwc_raw, dict) else []
     if not move_up:
         move_up = [
             "Demonstrate hands-on production deployment of autonomous tool-calling or multi-agent workflows.",
             "Strong verified performance on an end-to-end distributed systems & agent state architecture exercise.",
-        ]
-    if not move_down:
-        move_down = [
-            "Role requires immediate zero-ramp ownership of production agent infrastructure with no existing team support.",
-            "Technical evaluation exposes critical reliability or concurrency gaps in state management.",
         ]
 
     what_would_change = WhatWouldChange(
@@ -257,7 +227,7 @@ def _mock_decision(opinions: list[AgentOpinion], profile: CandidateProfile | Non
     """Return an auditable fallback decision when AI service is unavailable."""
     avg_score = sum(op.score for op in opinions) / max(len(opinions), 1)
     name = profile.name if profile else "Candidate"
-    target_role = profile.target_role if profile else "Target Role"
+    target_role = clean_target_role(profile.target_role) if profile else "Target Role"
     skills_text = ", ".join(s.name for s in profile.skills[:3]) if (profile and profile.skills) else "Distributed Systems and Backend Architecture"
 
     # Build criteria scores derived from opinion average
@@ -282,7 +252,7 @@ def _mock_decision(opinions: list[AgentOpinion], profile: CandidateProfile | Non
         criteria_scores=criteria_scores,
         reasoning=(
             f"The 4 independent evaluators and debate rounds established strong competency for {name} in {skills_text}. "
-            f"Candidate background aligns well with the key requirements of the {target_role} position."
+            f"Candidate background demonstrates direct alignment with core {target_role} responsibilities."
         ),
         weight_breakdown=[
             WeightBreakdown(

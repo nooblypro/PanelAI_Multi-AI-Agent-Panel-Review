@@ -240,6 +240,50 @@ function VoicePlaybackControls() {
   );
 }
 
+export function formatCleanRole(rawRole?: string): string {
+  if (!rawRole || !rawRole.trim()) return 'Target Role';
+  const text = rawRole.trim();
+
+  // 1. Match explicit markers like 'Job Description:', 'Role:', 'Position:', 'Title:'
+  const match = text.match(/(?:Job Description|Target Role|Role|Position|Title)\s*[:—\-]\s*([^\n\r·]+)/i);
+  let candidate = match ? match[1].trim() : text.split(/\r?\n/)[0].trim();
+
+  // 2. Remove company trailer if pasted on same line
+  candidate = candidate.split(/\s*(?:Company\s*[:—\-]|\bat\b|·|\bAbout the\b)/i)[0].trim();
+  candidate = candidate.replace(/[\s:—\-,.]+$/, '').trim();
+
+  // 3. Cap length cleanly
+  if (candidate.length > 50) {
+    const parts = candidate.slice(0, 47).split(' ');
+    candidate = (parts.length > 1 ? parts.slice(0, -1).join(' ') : candidate.slice(0, 47)) + '...';
+  }
+  return candidate || 'Target Role';
+}
+
+function formatCleanConfidenceRationale(raw: string | undefined, role: string): string {
+  if (!raw) return 'Panel consensus across 4 personas evaluated against core role requirements.';
+  if (raw.includes('Job Description:') || raw.includes('Company:') || raw.length > 140) {
+    return `Panel consensus across 4 personas evaluated against ${formatCleanRole(role)} requirements.`;
+  }
+  return raw;
+}
+
+function formatCleanReasoning(raw: string | undefined, name: string, role: string): string {
+  if (!raw) return 'Panel synthesized recommendation based on verified evidence quality.';
+  if (raw.includes('Job Description:') || raw.includes('About the Role') || raw.length > 320) {
+    const cleanRole = formatCleanRole(role);
+    const sentences = raw.split(/\.\s+/).filter(
+      (s) => !s.includes('Job Description:') && !s.includes('About the Role') && !s.includes("What You'll Do") && s.trim().length > 15
+    );
+    if (sentences.length > 0) {
+      const trimmed = sentences.slice(0, 3).join('. ');
+      return trimmed + (trimmed.endsWith('.') ? '' : '.');
+    }
+    return `The 4 independent evaluators and structured debate rounds established strong competency for ${name}. Candidate background demonstrates direct alignment with core ${cleanRole} responsibilities.`;
+  }
+  return raw;
+}
+
 export function VerdictReport() {
   const profile = usePipelineStore((s) => s.profile);
   const decision = usePipelineStore((s) => s.decision);
@@ -270,6 +314,10 @@ export function VerdictReport() {
     ? decision.overallScore
     : Number((criteriaScores.reduce((acc, c) => acc + c.weightedScore, 0)).toFixed(1));
 
+  const cleanRole = formatCleanRole(profile.targetRole);
+  const cleanRationale = formatCleanConfidenceRationale(decision.confidenceRationale, profile.targetRole);
+  const cleanReasoning = formatCleanReasoning(decision.reasoning, profile.name, profile.targetRole);
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 pb-20">
       {/* Verdict Hero Banner */}
@@ -299,13 +347,13 @@ export function VerdictReport() {
           </span>
 
           <p className="text-[13px] text-muted mt-3">
-            Candidate: <span className="text-text font-medium">{profile.name}</span> · {profile.targetRole}
+            Candidate: <span className="text-text font-medium">{profile.name}</span> · {cleanRole}
           </p>
 
-          {decision.confidenceRationale && (
+          {cleanRationale && (
             <p className="text-[12px] text-text/75 mt-2 flex items-start gap-1.5 max-w-xl">
               <Info size={14} className="text-accent-technical flex-shrink-0 mt-0.5" />
-              <span>{decision.confidenceRationale}</span>
+              <span>{cleanRationale}</span>
             </p>
           )}
         </div>
@@ -331,7 +379,7 @@ export function VerdictReport() {
         className="bg-surface rounded-lg border border-white/[0.06] p-6 mb-6"
       >
         <h3 className="text-[13px] font-semibold text-text mb-3">Why This Decision</h3>
-        <p className="text-[14px] text-text/85 leading-[1.6]">{decision.reasoning}</p>
+        <p className="text-[13px] text-text/85 leading-relaxed max-w-3xl">{cleanReasoning}</p>
       </motion.div>
 
       {/* 5 Job Description Evaluation Criteria & Weighted Scoring */}

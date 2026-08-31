@@ -42,6 +42,43 @@ def resolve_input_precedence(
     return ""
 
 
+def clean_target_role(raw: str) -> str:
+    """Extract a concise, clean target role title from job description text or headers."""
+    if not raw or not raw.strip():
+        return "Target Role"
+    text = raw.strip()
+
+    # 1. Match explicit markers like 'Job Description:', 'Role:', 'Position:', 'Title:'
+    match = re.search(
+        r"(?:Job Description|Target Role|Role|Position|Title)\s*[:—\-]\s*([^\n\r·]+)",
+        text,
+        re.IGNORECASE,
+    )
+    if match:
+        candidate = match.group(1).strip()
+    else:
+        # 2. Take first non-empty line
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        candidate = lines[0] if lines else "Target Role"
+
+    # Remove company trailer or separator if on same line (e.g. 'Company: Cargonet AI' or 'at Cargonet' or '·')
+    candidate = re.split(
+        r"\s*(?:Company\s*[:—\-]|\bat\b|·|\bAbout the\b)",
+        candidate,
+        flags=re.IGNORECASE,
+    )[0].strip()
+
+    # Clean up trailing punctuation or dashes
+    candidate = re.sub(r"[\s:—\-,.]+$", "", candidate).strip()
+
+    # Cap length at 50 characters cleanly
+    if len(candidate) > 50:
+        parts = candidate[:47].rsplit(" ", 1)
+        candidate = (parts[0] if len(parts) > 1 else candidate[:47]) + "..."
+
+    return candidate or "Target Role"
+
+
 def validate_and_normalize_inputs(
     target_role_text: Optional[str] = None,
     target_role_file_text: Optional[str] = None,
@@ -185,10 +222,12 @@ def _parse_profile_dict(
     if not claims:
         claims = [Claim(text="Demonstrated technical experience", source="resume")]
 
+    clean_role = clean_target_role(target_role) if (target_role and target_role.strip()) else clean_target_role(raw.get("targetRole"))
+
     return CandidateProfile(
         id=profile_id,
         name=name,
-        target_role=target_role,
+        target_role=clean_role,
         resume_text=resume_text,
         transcript_text=transcript_text,
         skills=skills,
@@ -209,6 +248,7 @@ def _heuristic_profile_builder(
 ) -> CandidateProfile:
     """Robust heuristic extraction when LLM is unavailable."""
     name = candidate_name or _infer_name(resume_text)
+    clean_role = clean_target_role(target_role)
 
     # Keywords to look for in resume & transcript
     tech_keywords = [
@@ -258,14 +298,14 @@ def _heuristic_profile_builder(
     return CandidateProfile(
         id=profile_id,
         name=name,
-        target_role=target_role,
+        target_role=clean_role,
         resume_text=resume_text,
         transcript_text=transcript_text,
         skills=skills[:12],
         experience=[
             Experience(
                 company="Recent Employer",
-                title=target_role.split("—")[0].strip() or "Engineer",
+                title=clean_role.split("—")[0].strip() or "Engineer",
                 duration="2020 - Present",
                 highlights=["Core systems and architecture contributor"],
             )
