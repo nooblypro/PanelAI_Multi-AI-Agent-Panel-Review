@@ -325,7 +325,7 @@ export function VerdictReport() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="bg-surface rounded-lg border border-white/[0.06] p-6 mb-6 flex flex-col sm:flex-row items-center gap-6"
+        className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 mb-6 flex flex-col sm:flex-row items-center gap-6"
       >
         <div className="flex-1 text-center sm:text-left">
           <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
@@ -376,7 +376,7 @@ export function VerdictReport() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05, duration: 0.3 }}
-        className="bg-surface rounded-lg border border-white/[0.06] p-6 mb-6"
+        className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 mb-6"
       >
         <h3 className="text-[13px] font-semibold text-text mb-3">Why This Decision</h3>
         <p className="text-[13px] text-text/85 leading-relaxed max-w-3xl">{cleanReasoning}</p>
@@ -387,7 +387,7 @@ export function VerdictReport() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08, duration: 0.3 }}
-        className="bg-surface rounded-lg border border-white/[0.06] p-6 mb-6"
+        className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 mb-6"
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-white/[0.06]">
           <div className="flex items-center gap-2">
@@ -414,7 +414,7 @@ export function VerdictReport() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12, duration: 0.3 }}
-          className="bg-surface rounded-lg border border-white/[0.06] p-6 mb-6"
+          className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 mb-6"
         >
           <h3 className="text-[13px] font-semibold text-text mb-4 flex items-center gap-2">
             <Info size={15} className="text-accent-technical" />
@@ -464,7 +464,7 @@ export function VerdictReport() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15, duration: 0.3 }}
-        className="bg-surface rounded-lg border border-white/[0.06] p-6 mb-6"
+        className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-6 mb-6"
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[13px] font-semibold text-text">Evaluator Perspective Influence</h3>
@@ -489,7 +489,7 @@ export function VerdictReport() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18, duration: 0.3 }}
-          className="bg-surface rounded-lg border border-white/[0.06] p-5"
+          className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5"
         >
           <h3 className="text-[13px] font-semibold text-success mb-3 flex items-center gap-2">
             <TrendingUp size={15} />
@@ -509,7 +509,7 @@ export function VerdictReport() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.3 }}
-          className="bg-surface rounded-lg border border-white/[0.06] p-5"
+          className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-5"
         >
           <h3 className="text-[13px] font-semibold text-danger mb-3 flex items-center gap-2">
             <TrendingDown size={15} />
@@ -565,7 +565,7 @@ export function VerdictReport() {
             </div>
           </div>
         ) : (
-          <div className="bg-surface rounded-lg border border-white/[0.06] p-4 flex items-center gap-2">
+          <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 flex items-center gap-2">
             <CheckCircle2 size={16} className="text-success" />
             <span className="text-[13px] text-muted">No unresolved disagreements — the panel reached full consensus.</span>
           </div>

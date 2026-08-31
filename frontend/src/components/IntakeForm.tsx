@@ -1,6 +1,21 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Sparkles, FileUp, Loader2, X, AlertCircle } from 'lucide-react';
+import {
+  Briefcase,
+  User,
+  Mic,
+  UploadCloud,
+  FileText,
+  X,
+  Sparkles,
+  ArrowRight,
+  Shield,
+  Scale,
+  TrendingUp,
+  Info,
+  Loader2,
+  AlertCircle,
+} from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
 import { buildCandidateProfile } from '../lib/agents';
 import type { CandidateProfile } from '../types';
@@ -9,7 +24,7 @@ function uid(): string {
   return Math.random().toString(36).slice(2, 11);
 }
 
-// Fallback client-side heuristic profile extraction if backend is unreachable
+// Fallback client-side profile extraction if backend is unreachable
 function extractProfileFallback(
   name: string,
   role: string,
@@ -108,7 +123,6 @@ export function IntakeForm() {
       setProfile(profile);
     } catch (err: any) {
       console.warn('Backend profile build error:', err);
-      // Fallback: If network or backend fails, try client-side extraction so user is never blocked
       try {
         let rText = resumeText.trim();
         if (!rText && resumeFile && (resumeFile.type === 'text/plain' || resumeFile.name.endsWith('.txt'))) {
@@ -133,315 +147,382 @@ export function IntakeForm() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-60px)] flex items-start justify-center pt-10 pb-20 px-4">
+    <div className="min-h-[calc(100vh-70px)] flex items-center justify-center p-4 sm:p-6 md:p-8">
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-[700px]"
+        transition={{ duration: 0.35, ease: 'easeOut' }}
+        className="w-full max-w-6xl bg-white rounded-2xl md:rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 md:p-8"
       >
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-text mb-2">New Candidate Evaluation</h1>
-          <p className="text-sm text-muted">
-            Upload or paste the target role / job description, resume, and interview transcript. Four AI agents will independently evaluate, debate, and deliver a final hiring verdict.
-          </p>
-        </div>
+        <div className="grid lg:grid-cols-12 gap-8 items-stretch">
+          {/* ========================================================================= */}
+          {/* LEFT COLUMN: HERO BRANDING & VALUE PROPOSITIONS */}
+          {/* ========================================================================= */}
+          <div className="lg:col-span-4 bg-[#F8FAFC] border border-slate-100 rounded-2xl p-6 sm:p-7 flex flex-col justify-between">
+            <div>
+              {/* Illustration */}
+              <div className="w-full mb-6 rounded-xl overflow-hidden bg-white/70 p-2 border border-slate-100 shadow-xs flex items-center justify-center">
+                <img
+                  src="/hero_illustration.jpg"
+                  alt="Evaluation Visual"
+                  className="w-full h-auto object-cover rounded-lg"
+                />
+              </div>
 
-        <div className="space-y-6">
-          {/* 1. TARGET ROLE */}
-          <div className="bg-surface/50 border border-white/[0.06] rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-semibold text-text uppercase tracking-wide flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-accent-hm" />
-                Target Role / Job Description
-              </label>
-              <span className="text-[11px] text-muted">File or text</span>
-            </div>
+              {/* Title & Tagline */}
+              <h2 className="text-2xl sm:text-[26px] font-bold font-serif text-slate-900 tracking-tight leading-snug">
+                Fair. Structured.<br />
+                <span className="text-[#2563EB]">Human</span>-first.
+              </h2>
 
-            {/* Dropzone for Target Role */}
-            <div
-              onDragOver={(e) => { e.preventDefault(); setDragOver('target'); }}
-              onDragLeave={() => setDragOver(null)}
-              onDrop={(e) => handleDrop(e, 'target')}
-              onClick={() => targetFileRef.current?.click()}
-              className={`cursor-pointer rounded-lg border-2 border-dashed p-3.5 text-center transition-all ${
-                dragOver === 'target'
-                  ? 'border-accent-hm/60 bg-accent-hm/5'
-                  : 'border-white/[0.1] hover:border-white/[0.2] bg-surface'
-              }`}
-            >
-              <input
-                ref={targetFileRef}
-                type="file"
-                accept=".txt,.pdf,.docx"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'target')}
-              />
-
-              {targetRoleFile ? (
-                <div className="flex items-center justify-between bg-white/[0.04] rounded-md px-3 py-2 text-[12px] text-accent-hm">
-                  <div className="flex items-center gap-2 truncate">
-                    <FileText size={14} className="flex-shrink-0" />
-                    <span className="truncate font-medium">{targetRoleFile.name}</span>
-                    <span className="text-[10px] text-muted">({(targetRoleFile.size / 1024).toFixed(1)} KB)</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setTargetRoleFile(null);
-                      if (targetFileRef.current) targetFileRef.current.value = '';
-                    }}
-                    className="p-1 hover:bg-white/[0.1] rounded text-muted hover:text-text transition-colors"
-                    title="Remove file"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-1 py-1">
-                  <FileUp size={18} className="text-muted" />
-                  <span className="text-xs text-muted">Drop role description or click to upload</span>
-                  <span className="text-[10px] text-muted/70">.txt, .pdf, .docx</span>
-                </div>
-              )}
-            </div>
-
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-white/[0.06]"></div>
-              <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted/70 font-semibold">OR</span>
-              <div className="flex-grow border-t border-white/[0.06]"></div>
-            </div>
-
-            <textarea
-              value={targetRoleText}
-              onChange={(e) => setTargetRoleText(e.target.value)}
-              placeholder="Paste or type job description or target role (e.g. Senior Backend Engineer)..."
-              className="w-full bg-surface border border-white/[0.08] rounded-lg px-3 py-2.5 text-[13px] text-text placeholder:text-muted/50 focus:outline-none focus:border-accent-hm/50 transition-colors resize-y min-h-[70px] font-sans"
-            />
-            {targetRoleFile && targetRoleText.trim() && (
-              <p className="text-[11px] text-accent-hm/80 mt-1.5 flex items-center gap-1">
-                <span>ℹ️</span> Pasted text takes precedence over the uploaded file.
+              <p className="text-xs text-slate-500 font-normal leading-relaxed mt-2.5">
+                Give every candidate an evaluation that's consistent, unbiased, and insightful.
               </p>
-            )}
-          </div>
-
-          {/* 2. RESUME & TRANSCRIPT GRID */}
-          <div className="grid sm:grid-cols-2 gap-5">
-            {/* Resume Card */}
-            <div className="bg-surface/50 border border-white/[0.06] rounded-xl p-4 sm:p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-semibold text-text uppercase tracking-wide flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent-technical" />
-                    Resume
-                  </label>
-                  <span className="text-[11px] text-muted">File or text</span>
-                </div>
-
-                {/* Dropzone for Resume */}
-                <div
-                  onDragOver={(e) => { e.preventDefault(); setDragOver('resume'); }}
-                  onDragLeave={() => setDragOver(null)}
-                  onDrop={(e) => handleDrop(e, 'resume')}
-                  onClick={() => resumeFileRef.current?.click()}
-                  className={`cursor-pointer rounded-lg border-2 border-dashed p-3.5 text-center transition-all ${
-                    dragOver === 'resume'
-                      ? 'border-accent-technical/60 bg-accent-technical/5'
-                      : 'border-white/[0.1] hover:border-white/[0.2] bg-surface'
-                  }`}
-                >
-                  <input
-                    ref={resumeFileRef}
-                    type="file"
-                    accept=".txt,.pdf,.docx"
-                    className="hidden"
-                    onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'resume')}
-                  />
-
-                  {resumeFile ? (
-                    <div className="flex items-center justify-between bg-white/[0.04] rounded-md px-3 py-2 text-[12px] text-accent-technical">
-                      <div className="flex items-center gap-2 truncate">
-                        <FileText size={14} className="flex-shrink-0" />
-                        <span className="truncate font-medium">{resumeFile.name}</span>
-                        <span className="text-[10px] text-muted">({(resumeFile.size / 1024).toFixed(1)} KB)</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setResumeFile(null);
-                          if (resumeFileRef.current) resumeFileRef.current.value = '';
-                        }}
-                        className="p-1 hover:bg-white/[0.1] rounded text-muted hover:text-text transition-colors"
-                        title="Remove file"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1 py-1">
-                      <FileUp size={18} className="text-muted" />
-                      <span className="text-xs text-muted">Drop resume or click to upload</span>
-                      <span className="text-[10px] text-muted/70">.txt, .pdf, .docx</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-white/[0.06]"></div>
-                  <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted/70 font-semibold">OR</span>
-                  <div className="flex-grow border-t border-white/[0.06]"></div>
-                </div>
-
-                <textarea
-                  value={resumeText}
-                  onChange={(e) => setResumeText(e.target.value)}
-                  placeholder="Or paste resume text here…"
-                  className="w-full bg-surface border border-white/[0.08] rounded-lg px-3 py-2.5 text-[13px] text-text placeholder:text-muted/50 focus:outline-none focus:border-accent-technical/50 transition-colors resize-y min-h-[110px] font-mono"
-                />
-              </div>
-              {resumeFile && resumeText.trim() && (
-                <p className="text-[11px] text-accent-technical/80 mt-1.5 flex items-center gap-1">
-                  <span>ℹ️</span> Pasted text takes precedence over the uploaded file.
-                </p>
-              )}
             </div>
 
-            {/* Transcript Card */}
-            <div className="bg-surface/50 border border-white/[0.06] rounded-xl p-4 sm:p-5 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-semibold text-text uppercase tracking-wide flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent-culture" />
-                    Interview Transcript
-                  </label>
-                  <span className="text-[11px] text-muted">File or text</span>
+            {/* Value Proposition Features */}
+            <div className="space-y-4 mt-8 pt-6 border-t border-slate-200/70">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0 mt-0.5">
+                  <Shield size={16} />
                 </div>
-
-                {/* Dropzone for Transcript */}
-                <div
-                  onDragOver={(e) => { e.preventDefault(); setDragOver('transcript'); }}
-                  onDragLeave={() => setDragOver(null)}
-                  onDrop={(e) => handleDrop(e, 'transcript')}
-                  onClick={() => transcriptFileRef.current?.click()}
-                  className={`cursor-pointer rounded-lg border-2 border-dashed p-3.5 text-center transition-all ${
-                    dragOver === 'transcript'
-                      ? 'border-accent-culture/60 bg-accent-culture/5'
-                      : 'border-white/[0.1] hover:border-white/[0.2] bg-surface'
-                  }`}
-                >
-                  <input
-                    ref={transcriptFileRef}
-                    type="file"
-                    accept=".txt,.pdf,.docx"
-                    className="hidden"
-                    onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'transcript')}
-                  />
-
-                  {transcriptFile ? (
-                    <div className="flex items-center justify-between bg-white/[0.04] rounded-md px-3 py-2 text-[12px] text-accent-culture">
-                      <div className="flex items-center gap-2 truncate">
-                        <FileText size={14} className="flex-shrink-0" />
-                        <span className="truncate font-medium">{transcriptFile.name}</span>
-                        <span className="text-[10px] text-muted">({(transcriptFile.size / 1024).toFixed(1)} KB)</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTranscriptFile(null);
-                          if (transcriptFileRef.current) transcriptFileRef.current.value = '';
-                        }}
-                        className="p-1 hover:bg-white/[0.1] rounded text-muted hover:text-text transition-colors"
-                        title="Remove file"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1 py-1">
-                      <FileUp size={18} className="text-muted" />
-                      <span className="text-xs text-muted">Drop transcript or click to upload</span>
-                      <span className="text-[10px] text-muted/70">.txt, .pdf, .docx</span>
-                    </div>
-                  )}
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-900">Independent AI agents</h4>
+                  <p className="text-[11px] text-slate-500">Multiple perspectives, zero bias</p>
                 </div>
-
-                <div className="relative flex py-2 items-center">
-                  <div className="flex-grow border-t border-white/[0.06]"></div>
-                  <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-muted/70 font-semibold">OR</span>
-                  <div className="flex-grow border-t border-white/[0.06]"></div>
-                </div>
-
-                <textarea
-                  value={transcriptText}
-                  onChange={(e) => setTranscriptText(e.target.value)}
-                  placeholder="Or paste transcript text here…"
-                  className="w-full bg-surface border border-white/[0.08] rounded-lg px-3 py-2.5 text-[13px] text-text placeholder:text-muted/50 focus:outline-none focus:border-accent-culture/50 transition-colors resize-y min-h-[110px] font-mono"
-                />
               </div>
-              {transcriptFile && transcriptText.trim() && (
-                <p className="text-[11px] text-accent-culture/80 mt-1.5 flex items-center gap-1">
-                  <span>ℹ️</span> Pasted text takes precedence over the uploaded file.
-                </p>
-              )}
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 mt-0.5">
+                  <Scale size={16} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-900">Structured process</h4>
+                  <p className="text-[11px] text-slate-500">Every detail considered</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-sky-50 border border-sky-100 flex items-center justify-center text-sky-600 flex-shrink-0 mt-0.5">
+                  <TrendingUp size={16} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-slate-900">Actionable insights</h4>
+                  <p className="text-[11px] text-slate-500">Clear verdicts and reports</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Validation & Error Notices */}
-          <AnimatePresence>
-            {errorMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="flex items-center gap-2 p-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-xs"
-              >
-                <AlertCircle size={15} className="flex-shrink-0" />
-                <span>{errorMessage}</span>
-              </motion.div>
-            )}
+          {/* ========================================================================= */}
+          {/* RIGHT COLUMN: EVALUATION FORM & FILE UPLOAD DROPZONES */}
+          {/* ========================================================================= */}
+          <div className="lg:col-span-8 flex flex-col justify-between">
+            <div>
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-6">
+                <div>
+                  <h1 className="text-2xl md:text-[28px] font-bold font-serif text-slate-900 tracking-tight">
+                    New Candidate Evaluation
+                  </h1>
+                  <p className="text-xs sm:text-[13px] text-slate-500 mt-1.5 leading-relaxed max-w-xl">
+                    Upload or paste the target role / job description, resume, and interview transcript. Four AI agents will independently evaluate, debate, and deliver a final hiring verdict.
+                  </p>
+                </div>
 
-            {!canBuild && missingFields.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-[12px] text-muted/80 text-center"
-              >
-                Please provide{' '}
-                <span className="text-warning font-medium">
-                  {missingFields.join(', ')}
-                </span>{' '}
-                (via file upload or text) to begin evaluation.
-              </motion.div>
-            )}
-          </AnimatePresence>
+                {/* Secure Badge */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-50/80 text-[11px] text-slate-600 flex-shrink-0 self-start">
+                  <Info size={13} className="text-slate-400" />
+                  <span>All files are <strong className="text-emerald-700 font-semibold">secure & private</strong></span>
+                </div>
+              </div>
 
-          {/* Build button */}
-          <motion.button
-            whileHover={canBuild ? { scale: 1.01 } : undefined}
-            whileTap={canBuild ? { scale: 0.99 } : undefined}
-            onClick={handleBuild}
-            disabled={!canBuild || building}
-            className={`w-full flex items-center justify-center gap-2 rounded-lg py-3.5 font-semibold text-sm transition-all shadow-lg ${
-              canBuild && !building
-                ? 'bg-accent-technical text-bg hover:bg-accent-technical/90 shadow-accent-technical/20 cursor-pointer'
-                : 'bg-surface-2 text-muted border border-white/[0.05] cursor-not-allowed'
-            }`}
-          >
-            {building ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Constructing Candidate Fact Base…
-              </>
-            ) : (
-              <>
-                <Sparkles size={18} />
-                Build Candidate Profile
-              </>
-            )}
-          </motion.button>
+              {/* Form Cards */}
+              <div className="space-y-4">
+                {/* ------------------------------------------------------------- */}
+                {/* 1. TARGET ROLE / JOB DESCRIPTION (FULL WIDTH) */}
+                {/* ------------------------------------------------------------- */}
+                <div className="border border-slate-200/90 rounded-xl p-4 sm:p-5 bg-white shadow-xs">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <Briefcase size={13} />
+                      </div>
+                      <span className="text-xs font-bold text-slate-900">1. Target Role / Job Description</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400">File or text</span>
+                  </div>
+
+                  {/* Dropzone */}
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setDragOver('target'); }}
+                    onDragLeave={() => setDragOver(null)}
+                    onDrop={(e) => handleDrop(e, 'target')}
+                    onClick={() => targetFileRef.current?.click()}
+                    className={`cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition-all ${
+                      dragOver === 'target'
+                        ? 'border-blue-500 bg-blue-50/50'
+                        : 'border-blue-200/70 hover:border-blue-400 bg-blue-50/20 hover:bg-blue-50/40'
+                    }`}
+                  >
+                    <input
+                      ref={targetFileRef}
+                      type="file"
+                      accept=".txt,.pdf,.docx"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'target')}
+                    />
+
+                    {targetRoleFile ? (
+                      <div className="flex items-center justify-between bg-white rounded-md px-3 py-2 text-[12px] text-blue-600 border border-blue-100 shadow-xs">
+                        <div className="flex items-center gap-2 truncate">
+                          <FileText size={14} className="flex-shrink-0" />
+                          <span className="truncate font-medium">{targetRoleFile.name}</span>
+                          <span className="text-[10px] text-slate-400">({(targetRoleFile.size / 1024).toFixed(1)} KB)</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTargetRoleFile(null);
+                            if (targetFileRef.current) targetFileRef.current.value = '';
+                          }}
+                          className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <UploadCloud size={20} className="text-blue-500" />
+                        <span className="text-xs font-medium text-slate-700">Drag and drop your file here, or click to browse</span>
+                        <span className="text-[11px] text-slate-400">.txt, .pdf, .docx</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-slate-100"></div>
+                    <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">OR</span>
+                    <div className="flex-grow border-t border-slate-100"></div>
+                  </div>
+
+                  <textarea
+                    value={targetRoleText}
+                    onChange={(e) => setTargetRoleText(e.target.value)}
+                    placeholder="Paste or type job description or target role (e.g. Senior Backend Engineer)..."
+                    className="w-full bg-slate-50/40 border border-slate-200 rounded-lg px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-y min-h-[64px]"
+                  />
+                </div>
+
+                {/* ------------------------------------------------------------- */}
+                {/* 2 & 3: RESUME & TRANSCRIPT 2-COLUMN GRID */}
+                {/* ------------------------------------------------------------- */}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {/* RESUME CARD */}
+                  <div className="border border-slate-200/90 rounded-xl p-4 sm:p-5 bg-white shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                            <User size={13} />
+                          </div>
+                          <span className="text-xs font-bold text-slate-900">2. Resume</span>
+                        </div>
+                        <span className="text-[11px] text-slate-400">File or text</span>
+                      </div>
+
+                      {/* Dropzone */}
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOver('resume'); }}
+                        onDragLeave={() => setDragOver(null)}
+                        onDrop={(e) => handleDrop(e, 'resume')}
+                        onClick={() => resumeFileRef.current?.click()}
+                        className={`cursor-pointer rounded-xl border-2 border-dashed p-3.5 text-center transition-all ${
+                          dragOver === 'resume'
+                            ? 'border-emerald-500 bg-emerald-50/50'
+                            : 'border-emerald-200/70 hover:border-emerald-400 bg-emerald-50/20 hover:bg-emerald-50/40'
+                        }`}
+                      >
+                        <input
+                          ref={resumeFileRef}
+                          type="file"
+                          accept=".txt,.pdf,.docx"
+                          className="hidden"
+                          onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'resume')}
+                        />
+
+                        {resumeFile ? (
+                          <div className="flex items-center justify-between bg-white rounded-md px-3 py-2 text-[12px] text-emerald-600 border border-emerald-100 shadow-xs">
+                            <div className="flex items-center gap-2 truncate">
+                              <FileText size={14} className="flex-shrink-0" />
+                              <span className="truncate font-medium">{resumeFile.name}</span>
+                              <span className="text-[10px] text-slate-400">({(resumeFile.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setResumeFile(null);
+                                if (resumeFileRef.current) resumeFileRef.current.value = '';
+                              }}
+                              className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1">
+                            <UploadCloud size={18} className="text-emerald-500" />
+                            <span className="text-xs font-medium text-slate-700">Drag and drop your file here, or click to browse</span>
+                            <span className="text-[11px] text-slate-400">.txt, .pdf, .docx</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-slate-100"></div>
+                        <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">OR</span>
+                        <div className="flex-grow border-t border-slate-100"></div>
+                      </div>
+
+                      <textarea
+                        value={resumeText}
+                        onChange={(e) => setResumeText(e.target.value)}
+                        placeholder="Paste resume text here..."
+                        className="w-full bg-slate-50/40 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all resize-y min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* TRANSCRIPT CARD */}
+                  <div className="border border-slate-200/90 rounded-xl p-4 sm:p-5 bg-white shadow-xs flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded bg-amber-50 text-amber-600 flex items-center justify-center">
+                            <Mic size={13} />
+                          </div>
+                          <span className="text-xs font-bold text-slate-900">3. Interview Transcript</span>
+                        </div>
+                        <span className="text-[11px] text-slate-400">File or text</span>
+                      </div>
+
+                      {/* Dropzone */}
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOver('transcript'); }}
+                        onDragLeave={() => setDragOver(null)}
+                        onDrop={(e) => handleDrop(e, 'transcript')}
+                        onClick={() => transcriptFileRef.current?.click()}
+                        className={`cursor-pointer rounded-xl border-2 border-dashed p-3.5 text-center transition-all ${
+                          dragOver === 'transcript'
+                            ? 'border-amber-500 bg-amber-50/50'
+                            : 'border-amber-200/70 hover:border-amber-400 bg-amber-50/20 hover:bg-amber-50/40'
+                        }`}
+                      >
+                        <input
+                          ref={transcriptFileRef}
+                          type="file"
+                          accept=".txt,.pdf,.docx"
+                          className="hidden"
+                          onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0], 'transcript')}
+                        />
+
+                        {transcriptFile ? (
+                          <div className="flex items-center justify-between bg-white rounded-md px-3 py-2 text-[12px] text-amber-600 border border-amber-100 shadow-xs">
+                            <div className="flex items-center gap-2 truncate">
+                              <FileText size={14} className="flex-shrink-0" />
+                              <span className="truncate font-medium">{transcriptFile.name}</span>
+                              <span className="text-[10px] text-slate-400">({(transcriptFile.size / 1024).toFixed(1)} KB)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTranscriptFile(null);
+                                if (transcriptFileRef.current) transcriptFileRef.current.value = '';
+                              }}
+                              className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1">
+                            <UploadCloud size={18} className="text-amber-500" />
+                            <span className="text-xs font-medium text-slate-700">Drag and drop your file here, or click to browse</span>
+                            <span className="text-[11px] text-slate-400">.txt, .pdf, .docx</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative flex py-2 items-center">
+                        <div className="flex-grow border-t border-slate-100"></div>
+                        <span className="flex-shrink mx-3 text-[10px] uppercase tracking-wider text-slate-400 font-semibold">OR</span>
+                        <div className="flex-grow border-t border-slate-100"></div>
+                      </div>
+
+                      <textarea
+                        value={transcriptText}
+                        onChange={(e) => setTranscriptText(e.target.value)}
+                        placeholder="Paste transcript text here..."
+                        className="w-full bg-slate-50/40 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 transition-all resize-y min-h-[64px]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message if any */}
+            <AnimatePresence>
+              {errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="mt-4 flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs"
+                >
+                  <AlertCircle size={15} className="flex-shrink-0 text-red-500" />
+                  <span>{errorMessage}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Bottom Actions & Requirement Notice */}
+            <div className="mt-5 space-y-3">
+              {/* Info notice bar */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 text-xs text-slate-600 text-center">
+                <Info size={14} className="text-slate-400 flex-shrink-0" />
+                <span>
+                  Please provide{' '}
+                  <strong className="text-blue-600 font-semibold">Target Role</strong>,{' '}
+                  <strong className="text-emerald-600 font-semibold">Resume</strong>,{' '}
+                  <strong className="text-amber-600 font-semibold">Interview Transcript</strong> to begin evaluation.
+                </span>
+              </div>
+
+              {/* Build Candidate Profile CTA */}
+              <button
+                onClick={handleBuild}
+                disabled={!canBuild || building}
+                className="w-full bg-[#0F172A] hover:bg-[#1E293B] active:scale-[0.995] text-white py-3.5 px-6 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {building ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Building Candidate Profile...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    <span>Build Candidate Profile</span>
+                    <ArrowRight size={16} className="ml-auto" />
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,400;1,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,31 +6,31 @@
 
 @layer base {
   :root {
-    --bg: #0B0C10;
-    --surface: #14161C;
-    --surface-2: #1C1F27;
-    --border: rgba(255,255,255,0.08);
-    --text: #F5F5F7;
-    --muted: #9096A6;
-    --accent-technical: #4C8DFF;
-    --accent-culture: #34D399;
-    --accent-hm: #F5B841;
-    --accent-skeptic: #F87171;
-    --success: #34D399;
-    --warning: #FBBF24;
-    --danger: #F87171;
-    --radius: 10px;
-    --radius-sm: 6px;
+    --bg: #F8FAFC;
+    --surface: #FFFFFF;
+    --surface-2: #F1F5F9;
+    --border: #E2E8F0;
+    --text: #0F172A;
+    --muted: #64748B;
+    --accent-technical: #2563EB;
+    --accent-culture: #10B981;
+    --accent-hm: #F59E0B;
+    --accent-skeptic: #EF4444;
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --radius: 12px;
+    --radius-sm: 8px;
   }
 
   * {
-    border-color: rgba(255,255,255,0.08);
+    border-color: #E2E8F0;
   }
 
   body {
     background-color: var(--bg);
     color: var(--text);
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
@@ -38,7 +38,7 @@
   }
 
   h1, h2, h3, h4 {
-    line-height: 1.2;
+    line-height: 1.25;
   }
 }
 
