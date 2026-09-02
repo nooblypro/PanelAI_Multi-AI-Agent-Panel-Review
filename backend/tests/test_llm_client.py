@@ -209,3 +209,32 @@ class TestOpenRouterExecution:
                     stage="test",
                 )
             assert "Unsupported LLM_PROVIDER" in str(exc_info.value)
+
+    def test_reasoning_thought_blocks_stripped(self):
+        raw = """<thought>
+Let's analyze the input: {"temp": 123}.
+Candidate looks unqualified.
+</thought>
+{
+  "score": 1,
+  "confidence": 95,
+  "verdict": "strong_no",
+  "summary": "Severe qualification deficit"
+}"""
+        result = _parse_json(raw, "test")
+        assert result["score"] == 1
+        assert result["verdict"] == "strong_no"
+
+    def test_reasoning_think_blocks_stripped(self):
+        raw = """<think>
+Thinking about {key: "val"} and evaluating candidate.
+</think>
+```json
+{
+  "score": 2,
+  "verdict": "strong_no"
+}
+```"""
+        result = _parse_json(raw, "test")
+        assert result["score"] == 2
+        assert result["verdict"] == "strong_no"

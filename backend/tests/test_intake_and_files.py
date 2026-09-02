@@ -387,3 +387,80 @@ class TestCORSPreflight:
             resp = await client.options("/api/build-profile", headers=headers)
             assert resp.status_code == 200
             assert resp.headers.get("access-control-allow-origin") == "http://localhost:5173"
+
+
+class TestSparseAndNegativeProfileExtraction:
+    """Ensure zero hallucination on sparse or unconventional candidate inputs."""
+
+    def test_heuristic_builder_does_not_hallucinate_degrees_or_jobs(self):
+        from app.services.profile_builder import _heuristic_profile_builder
+
+        profile = _heuristic_profile_builder(
+            profile_id="test-p1",
+            target_role="Hod CSC , VIT",
+            resume_text="Passed 12th , failed college",
+            transcript_text="I like cookies",
+            candidate_name="Candidate",
+            created_at="2026-01-01T00:00:00Z",
+        )
+
+        # Must not hallucinate Bachelor of Science
+        degree_names = [e.degree.lower() for e in profile.education]
+        assert not any("bachelor of science" in d for d in degree_names)
+        assert any("failed" in d or "incomplete" in d for d in degree_names)
+
+        # Must not hallucinate employment
+        assert len(profile.experience) == 0
+
+        # Must not hallucinate tech skills
+        assert len(profile.skills) == 0
+
+        # Must capture candidate claims
+        claim_texts = [c.text for c in profile.claims]
+        assert any("Passed 12th" in c for c in claim_texts)
+
+    def test_parse_profile_dict_preserves_empty_skills_and_experience(self):
+        from app.services.profile_builder import _parse_profile_dict
+
+        raw = {
+            "name": "Alex",
+            "targetRole": "Hod CSC , VIT",
+            "skills": [],
+            "experience": [],
+            "education": [],
+            "claims": [{"text": "Passed 12th grade", "source": "resume"}],
+        }
+
+        profile = _parse_profile_dict(
+            raw=raw,
+            profile_id="test-p2",
+            target_role="Hod CSC , VIT",
+            resume_text="Passed 12th , failed college",
+            transcript_text="I like cookies",
+            fallback_name="Alex",
+            created_at="2026-01-01T00:00:00Z",
+        )
+
+        # Empty skills and experience should NOT be replaced with fake defaults
+        assert len(profile.skills) == 0
+        assert len(profile.experience) == 0
+        assert any("12th" in e.degree or "Failed" in e.degree for e in profile.education)
+
+    def test_mock_opinion_unqualified_profile_evaluates_strong_no(self):
+        from app.services.independent_review import _mock_opinion
+        from app.services.profile_builder import _heuristic_profile_builder
+
+        profile = _heuristic_profile_builder(
+            profile_id="test-p3",
+            target_role="Hod CSC , VIT",
+            resume_text="Passed 12th , failed college",
+            transcript_text="I like cookies",
+            candidate_name="Candidate",
+            created_at="2026-01-01T00:00:00Z",
+        )
+
+        for agent_id in ["technical", "culture", "hiring_manager", "skeptic"]:
+            op = _mock_opinion(agent_id, profile)
+            assert op.score <= 2
+            assert op.verdict == "strong_no"
+            assert "fallback" in op.summary.lower()

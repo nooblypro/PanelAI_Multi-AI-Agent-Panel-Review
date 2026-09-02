@@ -57,10 +57,10 @@ _http_client: Optional[httpx.AsyncClient] = None
 
 
 STAGE_MAX_TOKENS: dict[str, int] = {
-    "independent_review": 450,
-    "debate": 750,
-    "synthesis": 650,
-    "profile_builder": 800,
+    "independent_review": 1000,
+    "debate": 1200,
+    "synthesis": 1500,
+    "profile_builder": 1200,
 }
 
 
@@ -332,10 +332,13 @@ def _parse_json(raw: str, label: str) -> dict[str, Any] | list[Any]:
 
     Handles:
     - Clean JSON string
+    - Reasoning model thought blocks (<thought>...</thought>, <think>...</think>)
     - Markdown code fences (` ```json ... ``` ` or ` ``` ... ``` `)
     - Preamble/postamble conversational text surrounding JSON
     """
-    text = raw.strip()
+    # Strip thought / reasoning blocks before searching for JSON so thought tokens don't poison braces
+    cleaned = re.sub(r"<(?:thought|think)>[\s\S]*?</(?:thought|think)>", "", raw, flags=re.IGNORECASE).strip()
+    text = cleaned if cleaned else raw.strip()
 
     # 1. Direct parse attempt
     try:
@@ -345,13 +348,12 @@ def _parse_json(raw: str, label: str) -> dict[str, Any] | list[Any]:
 
     # 2. Extract content from markdown code fences
     fence_pattern = r"```(?:json)?\s*\n?([\s\S]*?)\n?\s*```"
-    fence_match = re.search(fence_pattern, text, re.DOTALL | re.IGNORECASE)
-    if fence_match:
-        fenced_text = fence_match.group(1).strip()
+    fence_matches = re.findall(fence_pattern, text, re.DOTALL | re.IGNORECASE)
+    for fm in fence_matches:
         try:
-            return json.loads(fenced_text)
+            return json.loads(fm.strip())
         except json.JSONDecodeError:
-            pass
+            continue
 
     # 3. Fallback: Find outermost JSON array [...] or object {...}
     start_bracket = text.find("[")
@@ -373,6 +375,13 @@ def _parse_json(raw: str, label: str) -> dict[str, Any] | list[Any]:
             return json.loads(candidate.strip())
         except json.JSONDecodeError:
             continue
+
+    # 4. If direct extraction failed, also test the original raw string in case thought strip was overly greedy
+    if cleaned and cleaned != raw.strip():
+        try:
+            return json.loads(raw.strip())
+        except json.JSONDecodeError:
+            pass
 
     # If all parsing attempts fail, raise informative LLMError
     raise LLMError(

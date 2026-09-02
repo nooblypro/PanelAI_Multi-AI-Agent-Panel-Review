@@ -45,7 +45,13 @@ async def run_independent_reviews(
         warnings — accumulated validation warnings
     """
     t_all = time.perf_counter()
-    tasks = [_run_single_agent(agent_id, profile) for agent_id in AGENT_IDS]
+    
+    async def _staggered_agent(idx: int, agent_id: AgentId):
+        if idx > 0:
+            await asyncio.sleep(0.015 * idx)
+        return await _run_single_agent(agent_id, profile)
+
+    tasks = [_staggered_agent(i, agent_id) for i, agent_id in enumerate(AGENT_IDS)]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     opinions: list[AgentOpinion] = []
@@ -145,7 +151,38 @@ def _build_user_prompt(agent_id: AgentId, profile: CandidateProfile) -> str:
     resume_snippet = profile.resume_text.strip()[:1500] if profile.resume_text else "No raw resume text provided."
     transcript_snippet = profile.transcript_text.strip()[:1500] if profile.transcript_text else "No raw transcript text provided."
 
-    return f"""Evaluate this candidate for the target role below.
+    persona_directives: dict[AgentId, str] = {
+        "technical": (
+            f"YOUR SPECIALIZED EVALUATION LENS (TECHNICAL EVALUATOR):\n"
+            f"Focus strictly on technical depth, programming capabilities, systems architecture, "
+            f"and CS fundamentals for the {profile.target_role} role. "
+            "In your summary, state clearly whether technical competencies are demonstrated or absent."
+        ),
+        "culture": (
+            f"YOUR SPECIALIZED EVALUATION LENS (HR / CULTURE EVALUATOR):\n"
+            f"Focus strictly on communication clarity, professional demeanor, collaboration evidence, "
+            f"and behavioral signals in the interview transcript. "
+            "In your summary, state clearly how the candidate's communication and interpersonal conduct evaluates."
+        ),
+        "hiring_manager": (
+            f"YOUR SPECIALIZED EVALUATION LENS (HIRING MANAGER):\n"
+            f"Focus strictly on candidate suitability for the specific responsibilities, seniority level, "
+            f"and leadership expectations of {profile.target_role}. "
+            "In your summary, state clearly whether the candidate has the credentials and track record required."
+        ),
+        "skeptic": (
+            f"YOUR SPECIALIZED EVALUATION LENS (DEVIL'S ADVOCATE / SKEPTIC):\n"
+            f"Focus strictly on auditing claims, exposing contradictions between transcript and resume, "
+            "and highlighting unsupported assertions or severe hiring risks. "
+            "In your summary, state the audit findings, discrepancies, and critical vulnerabilities."
+        ),
+    }
+
+    directive = persona_directives.get(agent_id, "")
+
+    return f"""{directive}
+
+Evaluate this candidate for the target role below.
 
 <candidate_target_role>
 {profile.target_role}
@@ -224,10 +261,120 @@ def _mock_opinion(agent_id: AgentId, profile: CandidateProfile | None = None) ->
     name = profile.name if profile else "Candidate"
     target_role = clean_target_role(profile.target_role) if profile else "Target Role"
 
-    skills_text = ", ".join(s.name for s in profile.skills[:4]) if (profile and profile.skills) else "Distributed systems, Python, TypeScript"
+    skills_text = ", ".join(s.name for s in profile.skills[:4]) if (profile and profile.skills) else ""
     first_exp = profile.experience[0] if (profile and profile.experience) else None
-    exp_summary = f"{first_exp.title} at {first_exp.company}" if first_exp else "Engineering leadership"
+    exp_summary = f"{first_exp.title} at {first_exp.company}" if first_exp else ""
 
+    # Helper to find a verbatim quote that actually exists in resume or transcript
+    def _find_verbatim_quote(pref_source: str) -> tuple[str, str]:
+        if profile:
+            if pref_source == "transcript" and profile.transcript_text.strip():
+                for line in profile.transcript_text.splitlines():
+                    if line.strip() and len(line.strip()) > 3:
+                        return line.strip()[:120], "transcript"
+            if profile.resume_text.strip():
+                for line in profile.resume_text.splitlines():
+                    if line.strip() and len(line.strip()) > 3:
+                        return line.strip()[:120], "resume"
+            if profile.claims:
+                return profile.claims[0].text[:120], profile.claims[0].source
+        return "Insufficient documentation provided", "resume"
+
+    has_skills = bool(profile and profile.skills and any("none" not in s.name.lower() for s in profile.skills))
+    resume_lower = profile.resume_text.lower() if profile else ""
+    is_sparse_or_unqualified = (
+        not has_skills or
+        "failed college" in resume_lower or
+        len(resume_lower.strip()) < 50
+    )
+
+    if is_sparse_or_unqualified:
+        if agent_id == "technical":
+            quote, src = _find_verbatim_quote("resume")
+            return AgentOpinion(
+                agent_id="technical",
+                round="independent",
+                score=1,
+                confidence=95,
+                verdict="strong_no",
+                summary=(
+                    f"[Fallback assessment] {name} demonstrates zero verified technical competencies, "
+                    f"programming background, or systems engineering experience for {target_role}."
+                ),
+                evidence=[
+                    Evidence(
+                        quote=quote,
+                        source=src,
+                        note=f"Direct evidence showing total lack of technical qualifications for {target_role}.",
+                    )
+                ],
+                timestamp=now,
+            )
+        elif agent_id == "culture":
+            quote, src = _find_verbatim_quote("transcript")
+            return AgentOpinion(
+                agent_id="culture",
+                round="independent",
+                score=1,
+                confidence=90,
+                verdict="strong_no",
+                summary=(
+                    f"[Fallback assessment] Interview communication from {name} lacks professional substance; "
+                    "candidate provides no evidence of team collaboration, ownership, or structured problem solving."
+                ),
+                evidence=[
+                    Evidence(
+                        quote=quote,
+                        source=src,
+                        note="Interview input shows absence of professional communication or team alignment.",
+                    )
+                ],
+                timestamp=now,
+            )
+        elif agent_id == "hiring_manager":
+            quote, src = _find_verbatim_quote("resume")
+            return AgentOpinion(
+                agent_id="hiring_manager",
+                round="independent",
+                score=1,
+                confidence=95,
+                verdict="strong_no",
+                summary=(
+                    f"[Fallback assessment] Severe role deficit: {name} lacks the foundational qualifications, "
+                    f"degree credentials, and leadership experience required for {target_role}."
+                ),
+                evidence=[
+                    Evidence(
+                        quote=quote,
+                        source=src,
+                        note=f"Candidate background falls far below baseline requirements for {target_role}.",
+                    )
+                ],
+                timestamp=now,
+            )
+        else:  # skeptic
+            quote, src = _find_verbatim_quote("resume")
+            return AgentOpinion(
+                agent_id="skeptic",
+                round="independent",
+                score=1,
+                confidence=95,
+                verdict="strong_no",
+                summary=(
+                    f"[Fallback assessment] Adversarial audit indicates critical hiring risk: candidate claims "
+                    f"lack any verifiable backing and reveal severe qualification gaps for {target_role}."
+                ),
+                evidence=[
+                    Evidence(
+                        quote=quote,
+                        source=src,
+                        note=f"Unsubstantiated profile presenting extreme capability mismatch for {target_role}.",
+                    )
+                ],
+                timestamp=now,
+            )
+
+    # Qualified candidate fallback
     if agent_id == "technical":
         quote = profile.skills[0].evidence if (profile and profile.skills and profile.skills[0].evidence) else "Demonstrated core systems architecture"
         return AgentOpinion(
@@ -280,12 +427,12 @@ def _mock_opinion(agent_id: AgentId, profile: CandidateProfile | None = None) ->
             confidence=75,
             verdict="yes",
             summary=(
-                f"[Fallback assessment] Candidate trajectory is solid with background as {exp_summary}. "
+                f"[Fallback assessment] Candidate trajectory is solid with background as {exp_summary or 'Engineering lead'}. "
                 f"Directly addresses key responsibilities needed for {target_role}."
             ),
             evidence=[
                 Evidence(
-                    quote=exp_summary,
+                    quote=exp_summary or "Relevant domain experience",
                     source="resume",
                     note="Relevant domain experience and seniority level match",
                 )

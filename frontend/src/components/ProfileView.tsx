@@ -209,9 +209,13 @@ export function ProfileView() {
             Skills
           </h3>
           <div className="flex flex-wrap gap-2">
-            {profile.skills.map((skill, i) => (
-              <SkillChip key={i} skill={skill} index={i} />
-            ))}
+            {profile.skills.length > 0 ? (
+              profile.skills.map((skill, i) => (
+                <SkillChip key={i} skill={skill} index={i} />
+              ))
+            ) : (
+              <p className="text-xs text-muted italic">No technical skills detected in candidate input.</p>
+            )}
           </div>
         </motion.div>
 
@@ -226,7 +230,11 @@ export function ProfileView() {
             <Briefcase size={16} className="text-accent-hm" />
             Experience
           </h3>
-          <ExperienceTimeline experience={profile.experience} index={0} />
+          {profile.experience.length > 0 ? (
+            <ExperienceTimeline experience={profile.experience} index={0} />
+          ) : (
+            <p className="text-xs text-muted italic">No formal work experience listed in candidate input.</p>
+          )}
         </motion.div>
 
         {/* Education */}
@@ -241,17 +249,21 @@ export function ProfileView() {
             Education
           </h3>
           <div className="space-y-3.5">
-            {profile.education.map((edu, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.05, duration: 0.25 }}
-              >
-                <h4 className="text-sm font-semibold text-text">{edu.school}</h4>
-                <p className="text-[13px] text-muted">{edu.degree}{edu.year ? ` · ${edu.year}` : ''}</p>
-              </motion.div>
-            ))}
+            {profile.education.length > 0 ? (
+              profile.education.map((edu, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + i * 0.05, duration: 0.25 }}
+                >
+                  <h4 className="text-sm font-semibold text-text">{edu.school}</h4>
+                  <p className="text-[13px] text-muted">{edu.degree}{edu.year ? ` · ${edu.year}` : ''}</p>
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-xs text-muted italic">No educational credentials or degrees provided.</p>
+            )}
           </div>
         </motion.div>
       </div>
@@ -271,9 +283,13 @@ export function ProfileView() {
           </span>
         </h3>
         <div className="space-y-3">
-          {profile.claims.map((claim, i) => (
-            <ClaimQuote key={i} claim={claim} index={i} />
-          ))}
+          {profile.claims.length > 0 ? (
+            profile.claims.map((claim, i) => (
+              <ClaimQuote key={i} claim={claim} index={i} />
+            ))
+          ) : (
+            <p className="text-xs text-muted italic">No substantive candidate claims extracted.</p>
+          )}
         </div>
       </motion.div>
 

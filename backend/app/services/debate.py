@@ -141,8 +141,86 @@ def _mock_debate(opinions: list[AgentOpinion], profile: CandidateProfile | None 
     now = datetime.now(timezone.utc).isoformat()
     name = profile.name if profile else "Candidate"
     target_role = clean_target_role(profile.target_role) if profile else "Target Role"
-    skills_text = ", ".join(s.name for s in profile.skills[:3]) if (profile and profile.skills) else "Distributed Systems and Backend Architecture"
-    key_claim = profile.claims[0].text if (profile and profile.claims) else "Architected high-throughput infrastructure"
+    skills_text = ", ".join(s.name for s in profile.skills[:3]) if (profile and profile.skills) else "core domain requirements"
+    key_claim = profile.claims[0].text if (profile and profile.claims) else "demonstrated background"
+
+    avg_score = sum(op.score for op in opinions) / max(len(opinions), 1)
+
+    if avg_score < 4.0:
+        return [
+            DebateTurn(
+                id="turn-1",
+                from_agent="technical",
+                responding_to=None,
+                stance="challenge",
+                content=(
+                    f"Reviewing {name}'s submitted background against {target_role}, there is a critical absence "
+                    f"of verified technical depth, computer science fundamentals, or hands-on engineering experience."
+                ),
+                score_change=None,
+                timestamp=now,
+            ),
+            DebateTurn(
+                id="turn-2",
+                from_agent="hiring_manager",
+                responding_to=RespondingTo(
+                    agent_id="technical",
+                    excerpt="critical absence of verified technical depth",
+                ),
+                stance="agree",
+                content=(
+                    f"I agree. For a role like {target_role}, the candidate lacks the necessary credentials, "
+                    f"seniority, and operational delivery track record. This is a severe capability deficit."
+                ),
+                score_change=None,
+                timestamp=now,
+            ),
+            DebateTurn(
+                id="turn-3",
+                from_agent="culture",
+                responding_to=RespondingTo(
+                    agent_id="hiring_manager",
+                    excerpt="severe capability deficit",
+                ),
+                stance="agree",
+                content=(
+                    f"From a communication perspective, the interview interaction showed no evidence of "
+                    f"professional engagement, structured problem-solving, or collaborative alignment."
+                ),
+                score_change=None,
+                timestamp=now,
+            ),
+            DebateTurn(
+                id="turn-4",
+                from_agent="skeptic",
+                responding_to=RespondingTo(
+                    agent_id="technical",
+                    excerpt="critical absence of verified technical depth",
+                ),
+                stance="agree",
+                content=(
+                    f"The audit confirms this. The candidate's claims lack verifiable support and reveal substantial "
+                    f"qualification mismatches for {target_role}. Proceeding represents extreme hiring risk."
+                ),
+                score_change=None,
+                timestamp=now,
+            ),
+            DebateTurn(
+                id="turn-5",
+                from_agent="technical",
+                responding_to=RespondingTo(
+                    agent_id="skeptic",
+                    excerpt="extreme hiring risk",
+                ),
+                stance="agree",
+                content=(
+                    f"The panel is fully aligned across all four perspectives: we unanimously recommend rejection "
+                    f"due to baseline qualification gaps."
+                ),
+                score_change=None,
+                timestamp=now,
+            ),
+        ]
 
     return [
         DebateTurn(

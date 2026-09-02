@@ -213,14 +213,26 @@ def _parse_profile_dict(
             src = "transcript" if c.get("source") == "transcript" else "resume"
             claims.append(Claim(text=str(c["text"]), source=src))
 
-    if not skills:
-        skills = [Skill(name="General Engineering", evidence="Inferred from profile", source="resume")]
-    if not experience:
-        experience = [Experience(company="Experience", title="Engineer", duration="N/A", highlights=["Key impact"])]
-    if not education:
-        education = [Education(school="University", degree="Bachelor of Science")]
     if not claims:
-        claims = [Claim(text="Demonstrated technical experience", source="resume")]
+        # Fallback to extracting non-empty lines from user input verbatim as claims
+        for line in (resume_text.splitlines() + transcript_text.splitlines()):
+            line_clean = line.strip()
+            if line_clean and len(line_clean) > 3 and not line_clean.lower().startswith(("http", "email", "phone")):
+                src = "transcript" if line in transcript_text else "resume"
+                claims.append(Claim(text=line_clean[:150], source=src))
+                if len(claims) >= 4:
+                    break
+        if not claims and (resume_text.strip() or transcript_text.strip()):
+            src_text = resume_text.strip() or transcript_text.strip()
+            claims.append(Claim(text=src_text[:150], source="resume" if resume_text.strip() else "transcript"))
+
+    if not education:
+        # Check if user mentioned education status in resume (e.g. 12th, college dropout)
+        resume_lower = resume_text.lower()
+        if "failed college" in resume_lower or "dropped out" in resume_lower:
+            education.append(Education(school="College", degree="Incomplete (Failed)"))
+        if "12th" in resume_lower or "high school" in resume_lower:
+            education.append(Education(school="High School", degree="12th Grade"))
 
     clean_role = clean_target_role(target_role) if (target_role and target_role.strip()) else clean_target_role(raw.get("targetRole"))
 
@@ -272,9 +284,6 @@ def _heuristic_profile_builder(
             evidence = sentences[0][:120] if sentences else kw
             skills.append(Skill(name=kw, evidence=evidence, source="transcript"))
 
-    if not skills:
-        skills.append(Skill(name="Engineering", evidence="Extracted from resume", source="resume"))
-
     # Claims extraction
     claims: list[Claim] = []
     strong_verbs = ["led", "built", "architected", "drove", "designed", "reduced", "improved", "migrated", "scaled"]
@@ -293,7 +302,39 @@ def _heuristic_profile_builder(
                 break
 
     if not claims:
-        claims.append(Claim(text="Demonstrated technical problem solving in interview", source="transcript"))
+        # Verbatim fallback from candidate lines
+        for line in (resume_text.splitlines() + transcript_text.splitlines()):
+            line_clean = line.strip()
+            if line_clean and len(line_clean) > 3 and not line_clean.lower().startswith(("http", "email", "phone")):
+                src = "transcript" if line in transcript_text else "resume"
+                claims.append(Claim(text=line_clean[:150], source=src))
+                if len(claims) >= 4:
+                    break
+        if not claims and (resume_text.strip() or transcript_text.strip()):
+            src_text = resume_text.strip() or transcript_text.strip()
+            claims.append(Claim(text=src_text[:150], source="resume" if resume_text.strip() else "transcript"))
+
+    # Experience heuristic: only if candidate mentions career keywords
+    experience: list[Experience] = []
+    exp_indicators = ["engineer", "developer", "lead", "architect", "manager", "intern", "worked at", "employment", "experience", "company"]
+    if any(ind in resume_lower for ind in exp_indicators) and len(resume_text.strip()) > 60:
+        experience.append(
+            Experience(
+                company="Recent Employer",
+                title=clean_role.split("—")[0].strip() or "Engineer",
+                duration="Recent",
+                highlights=["Demonstrated contributions in role"],
+            )
+        )
+
+    # Education heuristic
+    education: list[Education] = []
+    if "failed college" in resume_lower or "dropped out" in resume_lower:
+        education.append(Education(school="College", degree="Incomplete (Failed)"))
+    if "12th" in resume_lower or "high school" in resume_lower:
+        education.append(Education(school="High School", degree="12th Grade"))
+    elif any(term in resume_lower for term in ["bachelor", "master", "phd", "b.tech", "btech", "degree", "university"]):
+        education.append(Education(school="University", degree="Bachelor of Science"))
 
     return CandidateProfile(
         id=profile_id,
@@ -302,15 +343,8 @@ def _heuristic_profile_builder(
         resume_text=resume_text,
         transcript_text=transcript_text,
         skills=skills[:12],
-        experience=[
-            Experience(
-                company="Recent Employer",
-                title=clean_role.split("—")[0].strip() or "Engineer",
-                duration="2020 - Present",
-                highlights=["Core systems and architecture contributor"],
-            )
-        ],
-        education=[Education(school="University", degree="Bachelor of Science", year="2019")],
+        experience=experience,
+        education=education,
         claims=claims,
         created_at=created_at,
     )

@@ -8,23 +8,30 @@ and extract a structured CandidateProfile JSON object.
 EXTRACTION RULES:
 1. "name": The candidate's full name (if not explicitly stated, infer from header or transcript, default to "Candidate").
 2. "targetRole": Keep the target role or job description provided by the user.
-3. "skills": List 4 to 12 key technical/domain skills. Each skill must have:
-   - "name": Short skill title (e.g. "Kafka", "Distributed Systems", "Python")
-   - "evidence": Exact or near-exact sentence from source text demonstrating this skill
-   - "source": "resume" or "transcript"
-4. "experience": List 1 to 5 work experience items:
+3. "skills": List ONLY genuinely demonstrated technical/domain skills found in the text.
+   - If the candidate demonstrated NO technical skills, return an empty array [].
+   - Each skill must have:
+     - "name": Short skill title (e.g. "Kafka", "Distributed Systems", "Python")
+     - "evidence": Exact sentence from source text demonstrating this skill
+     - "source": "resume" or "transcript"
+4. "experience": List genuine work experience items:
+   - If the candidate has NO formal work experience mentioned, return an empty array [].
    - "company": Company name
    - "title": Job title
-   - "duration": Duration or timeframe (e.g. "2020 - Present")
+   - "duration": Duration or timeframe (e.g. "2020 - Present" or "N/A")
    - "highlights": List of 1 to 3 key impact highlights
 5. "education": List education entries:
-   - "school": University or institution
-   - "degree": Degree name
-   - "year": Graduation year (optional string, e.g. "2018")
-6. "claims": List 3 to 6 notable verifiable claims made by the candidate:
-   - "text": Concrete claim about leadership, metrics, system scale, or architecture
+   - Accurately record what the candidate actually completed or attempted.
+   - If the candidate states "Passed 12th, failed college", accurately record:
+     - {"school": "High School", "degree": "12th Grade Passed"}
+     - {"school": "College", "degree": "Incomplete / Failed"}
+   - If no education is mentioned, return an empty array [].
+   - NEVER invent a "Bachelor of Science" or "University" degree if not present in the text!
+6. "claims": List 1 to 6 notable verifiable claims or key statements made by the candidate:
+   - Extract the candidate's actual statements from resume or transcript (e.g. "Passed 12th , failed college", "I like cookies").
+   - "text": Concrete statement from candidate
    - "source": "resume" or "transcript"
-7. ANTI-HALLUCINATION: Do NOT invent unmentioned companies, skills, graduation years, or metrics. Extract ONLY factual information present in the source text.
+7. STRICT ANTI-HALLUCINATION: Do NOT invent unmentioned companies, degrees, graduation years, skills, or metrics. Extract ONLY factual information present in the source text. If a section has no data, return an empty array [].
 
 OUTPUT FORMAT: Respond with ONLY a valid JSON object matching this structure:
 {

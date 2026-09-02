@@ -244,16 +244,52 @@ def _mock_decision(opinions: list[AgentOpinion], profile: CandidateProfile | Non
     overall_score = round(sum(cs.weighted_score for cs in criteria_scores), 1)
     rec = "Strong Hire" if overall_score >= 8.5 else ("Hire" if overall_score >= 7.0 else ("Hold" if overall_score >= 5.0 else "No Hire"))
 
+    if overall_score < 5.0:
+        reasoning = (
+            f"The 4 independent evaluators and debate rounds reached panel consensus that {name} does not meet the "
+            f"qualifications, technical depth, or prerequisite competencies required for {target_role}. "
+            "Severe capability and credential deficits preclude extending an offer."
+        )
+        strengths = [
+            "Candidate submitted documentation for evaluation.",
+        ]
+        concerns = [
+            f"Absence of demonstrated technical and leadership qualifications required for {target_role}.",
+            "Missing verifiable track record, domain experience, and requisite education credentials.",
+        ]
+        what_would_change = WhatWouldChange(
+            move_up=[
+                f"Complete formal credentials and establish a verifiable engineering/leadership track record relevant to {target_role}.",
+                "Demonstrate structured professional communication and technical domain mastery in interviews.",
+            ],
+            move_down=[
+                "Further reference verification confirms complete lack of baseline role requirements.",
+            ],
+        )
+    else:
+        reasoning = (
+            f"The 4 independent evaluators and debate rounds established strong competency for {name} in {skills_text}. "
+            f"Candidate background demonstrates direct alignment with core {target_role} responsibilities."
+        )
+        strengths = [
+            f"Demonstrated depth in core required technologies ({skills_text}).",
+            "Clear ownership, collaborative communication, and structured problem solving in interview.",
+        ]
+        concerns = [
+            "Requires confirmation of autonomy on largest-scale systems during on-site deep-dive.",
+        ]
+        what_would_change = WhatWouldChange(
+            move_up=[f"Demonstrate direct hands-on production leadership in {target_role} architecture."],
+            move_down=["Deeper reference checks reveal team collaboration or system reliability concerns."],
+        )
+
     return FinalDecision(
         recommendation=rec,
         confidence_level=75,
         confidence_rationale=f"Panel consensus across 4 personas evaluated against {target_role} requirements.",
         overall_score=overall_score,
         criteria_scores=criteria_scores,
-        reasoning=(
-            f"The 4 independent evaluators and debate rounds established strong competency for {name} in {skills_text}. "
-            f"Candidate background demonstrates direct alignment with core {target_role} responsibilities."
-        ),
+        reasoning=reasoning,
         weight_breakdown=[
             WeightBreakdown(
                 agent_id=aid,
@@ -262,16 +298,8 @@ def _mock_decision(opinions: list[AgentOpinion], profile: CandidateProfile | Non
             )
             for aid in ("technical", "culture", "hiring_manager", "skeptic")
         ],
-        strengths=[
-            f"Demonstrated depth in core required technologies ({skills_text}).",
-            "Clear ownership, collaborative communication, and structured problem solving in interview.",
-        ],
-        concerns=[
-            "Requires confirmation of autonomy on largest-scale systems during on-site deep-dive.",
-        ],
+        strengths=strengths,
+        concerns=concerns,
         unresolved_disagreements=[],
-        what_would_change=WhatWouldChange(
-            move_up=[f"Demonstrate direct hands-on production leadership in {target_role} architecture."],
-            move_down=["Deeper reference checks reveal team collaboration or system reliability concerns."],
-        ),
+        what_would_change=what_would_change,
     )
