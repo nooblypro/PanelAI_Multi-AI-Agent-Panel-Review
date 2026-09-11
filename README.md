@@ -2,6 +2,14 @@
 
 > An evidence-grounded multi-agent hiring committee that independently evaluates candidates, cross-examines findings through structured debate, and produces an auditable hiring verdict.
 
+🔗 **Live Demo:** [https://promptwars-tau-lac.vercel.app/](https://promptwars-tau-lac.vercel.app/)
+
+---
+
+## 📌 Overview
+
+PanelAI replaces traditional single-prompt AI resume screening with a multi-agent deliberative workflow. By extracting verifiable evidence quotes from raw candidate documents, executing four isolated evaluator personas in parallel, and conducting a structured cross-examination debate, PanelAI eliminates hallucinations and sycophancy to produce transparent, mathematically consistent hiring decisions.
+
 ---
 
 ## 🏗️ 5-Stage Deliberation Pipeline
@@ -48,28 +56,3 @@
 | **Production Engineering** | 20% | Scalability, SLAs, & outage remediation |
 | **Problem Solving** | 10% | Root-cause breakdown & trade-offs |
 | **Communication & Collaboration** | 10% | Cross-functional alignment |
-
----
-
-## ⚡ Quickstart
-
-### 1. Backend (FastAPI + Python)
-```bash
-cd backend
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-cp .env.example .env  # Configure OPENROUTER_API_KEY or GEMINI_API_KEY
-uvicorn app.main:app --port 8000 --reload
-```
-
-### 2. Frontend (React + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### 3. Run Tests
-```bash
-cd backend && ./.venv/bin/pytest -v
-```
