@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Handshake,
@@ -13,13 +13,12 @@ import {
   RotateCcw,
   Square,
   Volume2,
-  VolumeX,
   Loader2,
   ArrowDown,
   ArrowUp,
   AlertCircle,
-  Radio,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
 import type { AgentId, DebateTurn } from '../types';
@@ -35,11 +34,11 @@ const STANCE_ICON_MAP = {
 } as const;
 
 const STANCE_COLORS: Record<DebateTurn['stance'], string> = {
-  agree: '#34D399',
-  disagree: '#F87171',
-  challenge: '#F5B841',
-  concede: '#9096A6',
-  revise: '#4C8DFF',
+  agree: '#10B981',
+  disagree: '#F43F5E',
+  challenge: '#F59E0B',
+  concede: '#64748B',
+  revise: '#3B82F6',
 };
 
 function ReplyConnector({ fromAgent, excerpt }: { fromAgent: AgentId; excerpt: string }) {
@@ -47,17 +46,17 @@ function ReplyConnector({ fromAgent, excerpt }: { fromAgent: AgentId; excerpt: s
   return (
     <div className="mb-2.5 ml-10 sm:ml-12 relative">
       <div
-        className="absolute left-[-12px] top-0 bottom-0 w-px"
+        className="absolute left-[-12px] top-0 bottom-0 w-0.5 rounded-full"
         style={{ backgroundColor: `${color}40` }}
       />
       <div
-        className="rounded-xl px-3.5 py-2 border-l-2 bg-surface-2/80"
-        style={{ borderColor: `${color}60` }}
+        className="rounded-xl px-3.5 py-2 border-l-2 bg-surface-2/70 border border-border"
+        style={{ borderLeftColor: color }}
       >
-        <p className="text-xs text-muted mb-0.5">
-          Replying to <span style={{ color }} className="font-semibold">{AGENT_NAMES[fromAgent]}</span>
+        <p className="text-[11px] text-muted mb-0.5 font-medium">
+          Replying to <span style={{ color }} className="font-bold">{AGENT_NAMES[fromAgent]}</span>
         </p>
-        <p className="font-mono text-xs sm:text-[13px] text-text/80 italic leading-relaxed">
+        <p className="font-mono text-xs text-text/80 italic leading-relaxed">
           &ldquo;{excerpt}&rdquo;
         </p>
       </div>
@@ -67,12 +66,12 @@ function ReplyConnector({ fromAgent, excerpt }: { fromAgent: AgentId; excerpt: s
 
 function ScoreChangeChip({ from, to }: { from: number; to: number }) {
   const isUp = to > from;
-  const color = isUp ? '#34D399' : '#F87171';
+  const color = isUp ? '#10B981' : '#F43F5E';
   const Icon = isUp ? ArrowUp : ArrowDown;
 
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-md px-2.5 py-0.5 text-xs font-semibold"
+      className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold"
       style={{ backgroundColor: `${color}1A`, color }}
     >
       <Icon size={12} />
@@ -137,17 +136,17 @@ function DebateBubble({
       transition={{ duration: 0.35, ease: 'easeOut' }}
       className={`flex gap-3.5 transition-all duration-300 ${
         isSpeaking
-          ? 'p-2.5 rounded-xl bg-surface-2 border border-accent-technical/40 shadow-md ring-2 ring-accent-technical/20'
+          ? 'p-3 rounded-2xl bg-surface border border-accent-technical/40 shadow-lg ring-2 ring-accent-technical/20'
           : 'p-1'
       }`}
     >
       {/* Avatar */}
       <div
-        className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform mt-0.5"
+        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform mt-0.5 shadow-2xs"
         style={{
           backgroundColor: `${color}1A`,
           border: `1.5px solid ${color}40`,
-          boxShadow: isSpeaking ? `0 0 12px ${color}50` : 'none',
+          boxShadow: isSpeaking ? `0 0 16px ${color}60` : 'none',
         }}
       >
         <Icon size={20} style={{ color }} />
@@ -158,9 +157,9 @@ function DebateBubble({
         {/* Header */}
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm sm:text-[15px] font-bold" style={{ color }}>{name}</span>
+            <span className="text-sm font-bold" style={{ color }}>{name}</span>
             <span
-              className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md"
+              className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md"
               style={{ backgroundColor: `${stanceColor}1A`, color: stanceColor }}
             >
               <StanceIcon size={12} />
@@ -173,15 +172,15 @@ function DebateBubble({
 
           <div className="flex items-center gap-2">
             {isSpeaking ? (
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-accent-technical">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-accent-technical">
                 <SoundWave color={color} />
                 <span className="hidden sm:inline">Speaking</span>
               </div>
             ) : onPlayTurn ? (
               <button
                 onClick={onPlayTurn}
-                title="Play this persona voice turn"
-                className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1 text-muted hover:text-accent-technical rounded transition-opacity"
+                title="Play voice turn"
+                className="opacity-60 hover:opacity-100 p-1 text-muted hover:text-accent-technical rounded transition-all cursor-pointer"
               >
                 <Volume2 size={15} />
               </button>
@@ -196,12 +195,12 @@ function DebateBubble({
 
         {/* Message bubble */}
         <div
-          className="rounded-xl px-4 sm:px-5 py-3.5 bg-surface border border-border/80 shadow-xs transition-colors"
+          className="rounded-2xl p-4 bg-surface border border-border shadow-2xs transition-colors"
           style={{
-            borderLeft: `3.5px solid ${color}`,
+            borderLeft: `4px solid ${color}`,
           }}
         >
-          <p className="text-sm sm:text-[15px] text-text/90 leading-relaxed">{turn.content}</p>
+          <p className="text-xs sm:text-sm text-text/95 leading-relaxed font-normal">{turn.content}</p>
         </div>
       </div>
     </motion.div>
@@ -238,7 +237,6 @@ export function DebateThread() {
 
   useEffect(() => {
     const engine = new VoiceDebateEngine((turnIndex) => {
-      // Sync revealed turns with voice
       setRevealedTurns(Math.max(turnIndex, usePipelineStore.getState().revealedTurns));
     });
 
@@ -255,7 +253,6 @@ export function DebateThread() {
     };
   }, [setRevealedTurns]);
 
-  // Update turns in engine when debate turns load
   useEffect(() => {
     if (voiceEngineRef.current && debateTurns.length > 0) {
       voiceEngineRef.current.setTurns(debateTurns);
@@ -266,7 +263,6 @@ export function DebateThread() {
   const isLoading = debateStatus === 'running' && debateTurns.length === 0;
   const isError = debateStatus === 'error';
 
-  // Loading rounds ticker
   useEffect(() => {
     if (isLoading) {
       setLoadingRound(1);
@@ -277,7 +273,6 @@ export function DebateThread() {
     }
   }, [isLoading]);
 
-  // Auto-scroll when active speaking turn changes or revealed turns increment
   useEffect(() => {
     if (voiceState.currentTurnIndex >= 0) {
       const element = document.getElementById(`debate-turn-${voiceState.currentTurnIndex}`);
@@ -323,14 +318,8 @@ export function DebateThread() {
     }
   };
 
-  const handleRestartVoice = () => {
-    if (voiceEngineRef.current) {
-      voiceEngineRef.current.restart();
-    }
-  };
-
   const activeSpeakerName = voiceState.activeSpeaker ? AGENT_NAMES[voiceState.activeSpeaker] : null;
-  const activeSpeakerColor = voiceState.activeSpeaker ? AGENT_COLORS[voiceState.activeSpeaker] : '#4C8DFF';
+  const activeSpeakerColor = voiceState.activeSpeaker ? AGENT_COLORS[voiceState.activeSpeaker] : 'var(--accent-technical)';
   const ActiveSpeakerIcon = voiceState.activeSpeaker ? AGENT_ICONS[voiceState.activeSpeaker] : Volume2;
 
   const currentTurnNumber = voiceState.currentTurnIndex >= 0 ? voiceState.currentTurnIndex + 1 : 0;
@@ -338,116 +327,110 @@ export function DebateThread() {
   const progressPercent = totalTurnsCount > 0 && currentTurnNumber > 0 ? (currentTurnNumber / totalTurnsCount) * 100 : 0;
 
   return (
-    <div className="max-w-[820px] mx-auto px-4 sm:px-6 py-6 pb-20 space-y-4">
+    <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 pb-20 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface rounded-2xl border border-border p-5 sm:p-6 shadow-2xs">
         <div>
-          <h2 className="text-2xl font-bold font-serif text-text tracking-tight flex items-center gap-2">
-            <span>Multi-Agent Panel Debate</span>
-            <span className="text-[10px] font-sans font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent-technical/10 text-accent-technical border border-accent-technical/20">
-              Interactive Audio & Text
+          <div className="flex items-center gap-2.5 mb-1">
+            <h1 className="text-2xl font-bold font-serif text-text tracking-tight">
+              Adversarial Debate Arena
+            </h1>
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-accent-technical/10 text-accent-technical border border-accent-technical/20">
+              Stage 4
             </span>
-          </h2>
-          <p className="text-xs text-muted mt-1">
-            Evaluators challenge contradictory claims, defend findings, and refine stances based on peer critique before synthesizing the final verdict.
+          </div>
+          <p className="text-xs sm:text-sm text-muted leading-relaxed">
+            Evaluators cross-examine candidate evidence, defend conclusions, and dynamically adjust scores.
           </p>
         </div>
+
+        {allRevealed && (
+          <button
+            onClick={() => startVerdict()}
+            disabled={verdictStatus === 'running'}
+            className="flex-shrink-0 flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 font-bold text-sm bg-accent-technical hover:bg-accent-technical/90 text-white shadow-md transition-all cursor-pointer disabled:opacity-50"
+          >
+            {verdictStatus === 'running' ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Synthesizing...</span>
+              </>
+            ) : (
+              <>
+                <Sparkles size={16} />
+                <span>Synthesize Verdict</span>
+                <ArrowRight size={16} />
+              </>
+            )}
+          </button>
+        )}
       </div>
 
-      {/* Error Notice */}
+      {/* Error Alert */}
       {isError && (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-xl bg-danger/10 border border-danger/30 text-danger flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+          className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-500 flex items-center justify-between gap-3"
         >
           <div className="flex items-center gap-2.5">
             <AlertCircle size={18} className="flex-shrink-0" />
-            <div>
-              <p className="text-[13px] font-semibold">Debate Generation Interrupted</p>
-              <p className="text-[12px] opacity-90">{debateError || 'A connection issue occurred while deliberating.'}</p>
-            </div>
+            <p className="text-xs sm:text-sm font-semibold">{debateError || 'Failed to complete panel debate.'}</p>
           </div>
           <button
             onClick={() => startDebate()}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-danger text-white text-[12px] font-medium hover:bg-danger/90 transition-colors w-fit cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-rose-500 text-white text-xs font-bold hover:bg-rose-600 transition-colors cursor-pointer"
           >
-            <RotateCcw size={13} />
             Retry Debate
           </button>
         </motion.div>
       )}
 
-      {/* ========================================================================= */}
-      {/* AI VOICE DEBATE COCKPIT CONTROL BAR */}
-      {/* ========================================================================= */}
+      {/* VOICE AUDIO PLAYER CONTROL BAR */}
       {debateTurns.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-surface rounded-xl border border-border shadow-sm p-4 transition-colors no-print"
+          className="bg-surface rounded-2xl border border-border shadow-sm p-4 sm:p-5"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-            {/* Left: Active Persona & Speaking Indicator */}
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center relative transition-all"
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-2xs"
                 style={{
                   backgroundColor: `${activeSpeakerColor}1A`,
                   border: `1.5px solid ${activeSpeakerColor}40`,
                 }}
               >
                 <ActiveSpeakerIcon size={20} style={{ color: activeSpeakerColor }} />
-                {voiceState.isPlaying && (
-                  <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                    <span
-                      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                      style={{ backgroundColor: activeSpeakerColor }}
-                    />
-                    <span
-                      className="relative inline-flex rounded-full h-3 w-3"
-                      style={{ backgroundColor: activeSpeakerColor }}
-                    />
-                  </span>
-                )}
               </div>
 
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-text">
+                  <span className="text-sm font-bold text-text">
                     {voiceState.isPlaying || voiceState.isPaused ? (
                       <span className="flex items-center gap-1.5">
                         <span style={{ color: activeSpeakerColor }}>{activeSpeakerName}</span>
-                        <span className="text-muted font-normal">is speaking</span>
+                        <span className="text-muted font-medium">speaking</span>
                       </span>
                     ) : (
-                      'AI Voice Debate'
+                      'Voice Debate Playback'
                     )}
                   </span>
-
                   {voiceState.isPlaying && <SoundWave color={activeSpeakerColor} />}
                 </div>
-
-                <p className="text-[11px] text-muted flex items-center gap-2 mt-0.5">
-                  <span>
-                    {currentTurnNumber > 0 ? `Turn ${currentTurnNumber} of ${totalTurnsCount}` : `${totalTurnsCount} debate turns ready`}
-                  </span>
-                  {voiceState.status === 'synthesizing' && (
-                    <span className="text-accent-technical flex items-center gap-1 text-[10px]">
-                      <Loader2 size={10} className="animate-spin" /> Synthesizing voice…
-                    </span>
-                  )}
+                <p className="text-xs text-muted mt-0.5">
+                  {currentTurnNumber > 0 ? `Turn ${currentTurnNumber} of ${totalTurnsCount}` : `${totalTurnsCount} debate turns ready`}
                 </p>
               </div>
             </div>
 
-            {/* Right: Audio Playback Control Buttons */}
+            {/* Audio Action Buttons */}
             <div className="flex items-center gap-2 flex-wrap">
               {voiceState.isPlaying ? (
                 <button
                   onClick={handlePauseVoice}
-                  aria-label="Pause voice debate"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-2 border border-border hover:border-accent-technical/40 text-text text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-2 border border-border hover:border-accent-technical text-text text-xs font-bold transition-all cursor-pointer"
                 >
                   <Pause size={14} className="text-accent-technical" />
                   <span>Pause</span>
@@ -455,67 +438,57 @@ export function DebateThread() {
               ) : (
                 <button
                   onClick={handlePlayVoice}
-                  aria-label="Start or resume voice debate"
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent-technical hover:opacity-90 active:scale-[0.99] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent-technical hover:bg-accent-technical/90 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
                 >
                   <Play size={14} fill="currentColor" />
-                  <span>{voiceState.isPaused ? 'Resume Voice' : 'Play Voice Debate'}</span>
+                  <span>{voiceState.isPaused ? 'Resume Audio' : 'Play Voice Debate'}</span>
                 </button>
               )}
 
-              {/* Replay current turn */}
               <button
                 onClick={handleReplayTurn}
                 disabled={voiceState.currentTurnIndex < 0}
-                aria-label="Replay current turn"
-                title="Replay current turn"
-                className="p-2 rounded-lg bg-surface-2 border border-border hover:border-accent-technical/40 text-muted hover:text-text text-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                className="p-2 rounded-xl bg-surface-2 border border-border hover:border-accent-technical text-muted hover:text-text text-xs transition-all disabled:opacity-30 cursor-pointer"
+                title="Replay turn"
               >
                 <RotateCcw size={14} />
               </button>
 
-              {/* Skip to next turn */}
               <button
                 onClick={handleSkipTurn}
                 disabled={voiceState.currentTurnIndex < 0 || voiceState.currentTurnIndex >= totalTurnsCount - 1}
-                aria-label="Skip to next speaking turn"
-                title="Skip to next speaking turn"
-                className="p-2 rounded-lg bg-surface-2 border border-border hover:border-accent-technical/40 text-muted hover:text-text text-xs transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                className="p-2 rounded-xl bg-surface-2 border border-border hover:border-accent-technical text-muted hover:text-text text-xs transition-all disabled:opacity-30 cursor-pointer"
+                title="Skip to next turn"
               >
                 <SkipForward size={14} />
               </button>
 
-              {/* Stop */}
               {(voiceState.isPlaying || voiceState.isPaused) && (
                 <button
                   onClick={handleStopVoice}
-                  aria-label="Stop voice playback"
-                  title="Stop voice playback"
-                  className="p-2 rounded-lg bg-surface-2 border border-border hover:border-danger/40 text-muted hover:text-danger text-xs transition-all cursor-pointer"
+                  className="p-2 rounded-xl bg-surface-2 border border-border hover:border-rose-500 text-muted hover:text-rose-500 text-xs transition-all cursor-pointer"
+                  title="Stop audio"
                 >
                   <Square size={14} />
                 </button>
               )}
 
-              {/* Skip to end / reveal all button */}
               {!allRevealed && (
                 <button
                   onClick={revealAllTurns}
-                  aria-label="Reveal all debate text turns"
-                  className="text-[11px] text-muted hover:text-text px-2 py-1 underline transition-colors cursor-pointer ml-1"
+                  className="text-xs text-accent-technical font-semibold hover:underline px-2 py-1 transition-colors cursor-pointer"
                 >
-                  Reveal all text
+                  Reveal All Turns
                 </button>
               )}
             </div>
           </div>
 
-          {/* Bottom Audio Progress Bar */}
           <div className="w-full h-1 bg-surface-2 rounded-full overflow-hidden mt-3 border border-border/50">
             <motion.div
               initial={false}
               animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
+              transition={{ duration: 0.25 }}
               className="h-full rounded-full"
               style={{ backgroundColor: activeSpeakerColor }}
             />
@@ -525,20 +498,20 @@ export function DebateThread() {
 
       {/* Loading state */}
       {isLoading && (
-        <div className="flex items-center justify-center py-20 bg-surface rounded-xl border border-border">
+        <div className="flex items-center justify-center py-20 bg-surface rounded-2xl border border-border shadow-2xs">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 size={30} className="animate-spin text-accent-technical" />
-            <p className="text-[13px] font-semibold text-text">Multi-Agent Deliberation in Progress</p>
-            <p className="text-[12px] text-muted">Persona debate rounds are compiling (Round {loadingRound})…</p>
+            <Loader2 size={32} className="animate-spin text-accent-technical" />
+            <p className="text-sm font-bold text-text">Multi-Agent Deliberation in Progress</p>
+            <p className="text-xs text-muted">Orchestrating persona debate rounds (Round {loadingRound})…</p>
           </div>
         </div>
       )}
 
-      {/* Debate Messages Stream */}
+      {/* Debate Turns Stream */}
       {debateTurns.length > 0 && (
         <div
           ref={scrollRef}
-          className="space-y-4 max-h-[64vh] overflow-y-auto scrollbar-thin pr-1 sm:pr-2"
+          className="space-y-4 max-h-[62vh] overflow-y-auto scrollbar-thin pr-1 sm:pr-2"
         >
           <AnimatePresence>
             {debateTurns.slice(0, Math.max(revealedTurns, voiceState.currentTurnIndex + 1)).map((turn, i) => (
@@ -556,34 +529,6 @@ export function DebateThread() {
             ))}
           </AnimatePresence>
         </div>
-      )}
-
-      {/* Final verdict CTA button */}
-      {allRevealed && (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-          className="pt-2 no-print"
-        >
-          <button
-            onClick={() => startVerdict()}
-            disabled={verdictStatus === 'running'}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl px-6 py-3 font-bold text-sm bg-accent-technical hover:opacity-90 active:scale-[0.99] text-white shadow-sm transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {verdictStatus === 'running' ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Synthesizing Final Verdict…
-              </>
-            ) : (
-              <>
-                <span>Proceed to Final Verdict & Report</span>
-                <ArrowRight size={16} />
-              </>
-            )}
-          </button>
-        </motion.div>
       )}
     </div>
   );

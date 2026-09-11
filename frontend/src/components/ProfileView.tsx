@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Pencil, ArrowRight, Briefcase, GraduationCap, Quote, Search } from 'lucide-react';
+import { Pencil, ArrowRight, Briefcase, GraduationCap, Quote, Search, ShieldCheck, FileCheck2, Sparkles, CheckCircle2 } from 'lucide-react';
 import { usePipelineStore } from '../lib/store';
 import type { CandidateProfile } from '../types';
 import { formatCleanRole } from './VerdictReport';
@@ -10,24 +10,25 @@ function SkillChip({ skill, index }: { skill: CandidateProfile['skills'][number]
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={{ opacity: 0, scale: 0.94 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 0.04, duration: 0.2 }}
+      transition={{ delay: index * 0.03, duration: 0.2 }}
       className="relative inline-block"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >
       <button
+        type="button"
         onClick={() => setShowTooltip(!showTooltip)}
         className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs sm:text-[13px] font-medium bg-surface-2 border border-border hover:border-accent-technical/40 transition-colors"
       >
-        <span className="text-text">{skill.name}</span>
+        <span className="text-text font-medium">{skill.name}</span>
         <span
           className="text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase"
           style={{
             backgroundColor:
-              skill.source === 'resume' ? 'rgba(37,99,235,0.15)' : 'rgba(16,185,129,0.15)',
-            color: skill.source === 'resume' ? '#3B82F6' : '#10B981',
+              skill.source === 'resume' ? 'rgba(59,130,246,0.15)' : 'rgba(16,185,129,0.15)',
+            color: skill.source === 'resume' ? 'var(--accent-technical)' : 'var(--accent-culture)',
           }}
         >
           {skill.source}
@@ -38,9 +39,14 @@ function SkillChip({ skill, index }: { skill: CandidateProfile['skills'][number]
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15 }}
-          className="absolute bottom-full left-0 mb-2 z-20 w-72 bg-surface border border-border rounded-xl p-3.5 shadow-xl"
+          className="absolute bottom-full left-0 mb-2 z-30 w-72 bg-surface border border-border rounded-xl p-3.5 shadow-2xl"
         >
-          <p className="text-xs text-muted leading-relaxed font-mono">{skill.evidence}</p>
+          <div className="text-[10px] font-bold text-muted uppercase tracking-wider mb-1 flex items-center gap-1">
+            <FileCheck2 size={12} className="text-accent-technical" /> Verbatim Source Evidence
+          </div>
+          <p className="text-xs text-text leading-relaxed font-mono bg-surface-2 p-2 rounded-lg border border-border">
+            "{skill.evidence}"
+          </p>
         </motion.div>
       )}
     </motion.div>
@@ -65,17 +71,17 @@ function ExperienceTimeline({
           className="relative pl-5"
         >
           {/* Timeline dot + line */}
-          <div className="absolute left-0 top-2 w-2.5 h-2.5 rounded-full bg-accent-technical" />
+          <div className="absolute left-0 top-2 w-2.5 h-2.5 rounded-full bg-accent-technical ring-4 ring-accent-technical/10" />
           {i < experience.length - 1 && (
             <div className="absolute left-[4px] top-4 bottom-[-14px] w-px bg-border" />
           )}
           <div>
-            <h4 className="text-sm font-semibold text-text">{exp.company}</h4>
-            <p className="text-[13px] text-muted">{exp.title} · {exp.duration}</p>
+            <h4 className="text-sm font-bold text-text">{exp.company}</h4>
+            <p className="text-[12px] font-medium text-muted">{exp.title} • {exp.duration}</p>
             <ul className="mt-2 space-y-1.5">
               {exp.highlights.map((h, j) => (
-                <li key={j} className="text-[13px] text-text/85 flex items-start gap-2 leading-relaxed">
-                  <span className="text-muted mt-0.5">·</span>
+                <li key={j} className="text-[12px] sm:text-[13px] text-text/85 flex items-start gap-2 leading-relaxed">
+                  <span className="text-accent-technical mt-0.5">•</span>
                   <span>{h}</span>
                 </li>
               ))}
@@ -98,12 +104,12 @@ function ClaimQuote({
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.25 + index * 0.05, duration: 0.25 }}
-      className="p-4 rounded-xl bg-surface-2 border border-border flex items-start justify-between gap-3.5 group hover:border-accent-technical/40 transition-colors"
+      transition={{ delay: 0.2 + index * 0.05, duration: 0.25 }}
+      className="p-4 rounded-xl bg-surface-2/60 border border-border flex items-start justify-between gap-3.5 group hover:border-accent-skeptic/40 transition-colors"
     >
       <div className="flex items-start gap-3 flex-1 min-w-0">
-        <Quote size={16} className="text-accent-skeptic flex-shrink-0 mt-0.5 opacity-75" />
-        <p className="text-[13px] text-text italic leading-relaxed font-mono">
+        <Quote size={16} className="text-accent-skeptic flex-shrink-0 mt-0.5 opacity-80" />
+        <p className="text-xs sm:text-[13px] text-text italic leading-relaxed font-mono">
           "{claim.text}"
         </p>
       </div>
@@ -111,8 +117,8 @@ function ClaimQuote({
         className="text-[10px] font-semibold px-2 py-0.5 rounded uppercase flex-shrink-0"
         style={{
           backgroundColor:
-            claim.source === 'resume' ? 'rgba(37,99,235,0.15)' : 'rgba(16,185,129,0.15)',
-          color: claim.source === 'resume' ? '#3B82F6' : '#10B981',
+            claim.source === 'resume' ? 'rgba(59,130,246,0.15)' : 'rgba(16,185,129,0.15)',
+          color: claim.source === 'resume' ? 'var(--accent-technical)' : 'var(--accent-culture)',
         }}
       >
         {claim.source}
@@ -148,65 +154,85 @@ export function ProfileView() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 pb-20">
-      {/* Header */}
+    <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8 pb-20">
+      {/* Candidate Header Dossier */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="mb-8"
+        className="mb-8 p-6 sm:p-7 rounded-2xl bg-surface border border-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6"
       >
-        <div className="flex items-center gap-3 mb-1.5">
-          {editingName ? (
-            <input
-              autoFocus
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              onBlur={() => {
-                updateProfileName(nameInput || profile.name);
-                setEditingName(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            {editingName ? (
+              <input
+                autoFocus
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onBlur={() => {
                   updateProfileName(nameInput || profile.name);
                   setEditingName(false);
-                }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    updateProfileName(nameInput || profile.name);
+                    setEditingName(false);
+                  }
+                }}
+                className="text-2xl sm:text-3xl font-bold text-text bg-surface-2 border border-accent-technical rounded-lg px-2.5 py-1 focus:outline-none"
+              />
+            ) : (
+              <h1 className="text-2xl sm:text-3xl font-bold font-serif text-text tracking-tight">{profile.name}</h1>
+            )}
+            <button
+              onClick={() => {
+                setNameInput(profile.name);
+                setEditingName(!editingName);
               }}
-              className="text-2xl sm:text-3xl font-bold text-text bg-surface border border-border rounded-lg px-2.5 py-1 focus:outline-none focus:border-accent-technical"
-            />
-          ) : (
-            <h1 className="text-2xl sm:text-3xl font-bold font-serif text-text">{profile.name}</h1>
-          )}
-          <button
-            onClick={() => {
-              setNameInput(profile.name);
-              setEditingName(!editingName);
-            }}
-            className="text-muted hover:text-text transition-colors p-1 cursor-pointer"
-          >
-            <Pencil size={17} />
-          </button>
+              className="text-muted hover:text-text transition-colors p-1 cursor-pointer"
+              title="Edit Candidate Name"
+            >
+              <Pencil size={16} />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="text-xs sm:text-[13px] font-semibold px-3 py-1 rounded-full bg-accent-technical/10 text-accent-technical border border-accent-technical/20">
+              {formatCleanRole(profile.targetRole)}
+            </span>
+            <span className="text-xs text-emerald-500 font-medium flex items-center gap-1 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+              <ShieldCheck size={14} /> Zero-Hallucination Fact Base
+            </span>
+          </div>
+
+          <p className="text-xs sm:text-sm text-muted mt-3 max-w-2xl leading-relaxed">
+            All 4 specialized evaluator agents strictly consume this verified fact-base. No unevidenced external assumptions are allowed downstream.
+          </p>
         </div>
-        <span className="inline-block text-xs sm:text-[13px] font-semibold px-3.5 py-1 rounded-full bg-accent-technical/10 text-accent-technical border border-accent-technical/20">
-          {formatCleanRole(profile.targetRole)}
-        </span>
-        <p className="text-sm text-muted mt-3 max-w-2xl">
-          This is the shared fact-base. All four agents read only from this profile — no other context is passed downstream.
-        </p>
+
+        <button
+          onClick={handleStartReview}
+          disabled={reviewStatus === 'running'}
+          className="flex-shrink-0 flex items-center justify-center gap-2.5 rounded-xl px-6 py-3.5 font-bold text-sm sm:text-base bg-accent-technical hover:bg-accent-technical/90 text-white shadow-md transition-all cursor-pointer disabled:opacity-50"
+        >
+          <Sparkles size={17} />
+          <span>Launch 4-Agent Review</span>
+          <ArrowRight size={17} />
+        </button>
       </motion.div>
 
-      {/* Three columns */}
+      {/* Three Grid Cards */}
       <div className="grid lg:grid-cols-3 gap-6 mb-8">
         {/* Skills */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05, duration: 0.3 }}
-          className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
+          className="bg-surface rounded-2xl border border-border shadow-2xs p-5 sm:p-6"
         >
-          <h3 className="text-sm font-bold text-text mb-3.5 flex items-center gap-2">
+          <h3 className="text-sm font-bold text-text mb-4 flex items-center gap-2">
             <span className="w-1.5 h-4 rounded-full bg-accent-technical" />
-            Skills
+            Verified Technical Skills
           </h3>
           <div className="flex flex-wrap gap-2">
             {profile.skills.length > 0 ? (
@@ -224,11 +250,11 @@ export function ProfileView() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.3 }}
-          className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
+          className="bg-surface rounded-2xl border border-border shadow-2xs p-5 sm:p-6"
         >
           <h3 className="text-sm font-bold text-text mb-4 flex items-center gap-2">
-            <Briefcase size={16} className="text-accent-hm" />
-            Experience
+            <Briefcase size={16} className="text-amber-500" />
+            Career Experience
           </h3>
           {profile.experience.length > 0 ? (
             <ExperienceTimeline experience={profile.experience} index={0} />
@@ -242,11 +268,11 @@ export function ProfileView() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.3 }}
-          className="bg-surface rounded-xl border border-border shadow-xs p-5 transition-colors"
+          className="bg-surface rounded-2xl border border-border shadow-2xs p-5 sm:p-6"
         >
           <h3 className="text-sm font-bold text-text mb-4 flex items-center gap-2">
-            <GraduationCap size={16} className="text-accent-culture" />
-            Education
+            <GraduationCap size={16} className="text-emerald-500" />
+            Education & Degrees
           </h3>
           <div className="space-y-3.5">
             {profile.education.length > 0 ? (
@@ -256,9 +282,10 @@ export function ProfileView() {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 + i * 0.05, duration: 0.25 }}
+                  className="p-3 rounded-xl bg-surface-2/40 border border-border"
                 >
-                  <h4 className="text-sm font-semibold text-text">{edu.school}</h4>
-                  <p className="text-[13px] text-muted">{edu.degree}{edu.year ? ` · ${edu.year}` : ''}</p>
+                  <h4 className="text-sm font-bold text-text">{edu.school}</h4>
+                  <p className="text-xs text-muted mt-0.5">{edu.degree}{edu.year ? ` • ${edu.year}` : ''}</p>
                 </motion.div>
               ))
             ) : (
@@ -273,13 +300,13 @@ export function ProfileView() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.3 }}
-        className="mb-8"
+        className="bg-surface rounded-2xl border border-border shadow-2xs p-5 sm:p-6"
       >
         <h3 className="text-sm font-bold text-text mb-3.5 flex items-center gap-2">
-          <Search size={16} className="text-accent-skeptic" />
-          Key Claims
+          <Search size={16} className="text-rose-500" />
+          Extracted Resume Claims
           <span className="text-xs text-muted font-normal ml-1">
-            — what the Skeptic Agent will interrogate
+            — Target points for Skeptic Auditor cross-examination
           </span>
         </h3>
         <div className="space-y-3">
@@ -291,23 +318,6 @@ export function ProfileView() {
             <p className="text-xs text-muted italic">No substantive candidate claims extracted.</p>
           )}
         </div>
-      </motion.div>
-
-      {/* Action */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
-      >
-        <button
-          onClick={handleStartReview}
-          disabled={reviewStatus === 'running'}
-          aria-label="Run independent review with 4 parallel evaluator agents"
-          className="flex items-center gap-2 rounded-xl px-6 py-3 font-bold text-sm sm:text-base bg-accent-technical text-bg hover:bg-accent-technical/90 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
-        >
-          Run Panel Review
-          <ArrowRight size={17} />
-        </button>
       </motion.div>
     </div>
   );
