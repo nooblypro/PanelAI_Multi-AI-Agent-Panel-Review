@@ -1,14 +1,21 @@
 import { motion } from 'framer-motion';
-import { Check, FileText, UserCheck, Users, MessageSquare, Award } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import type { Stage } from '../types';
 import { usePipelineStore } from '../lib/store';
 
-const STEPS: { id: Stage; label: string; icon: any }[] = [
-  { id: 'intake', label: 'Intake', icon: FileText },
-  { id: 'profile', label: 'Fact Base', icon: UserCheck },
-  { id: 'review', label: '4-Agent Review', icon: Users },
-  { id: 'debate', label: 'Panel Debate', icon: MessageSquare },
-  { id: 'verdict', label: 'Verdict', icon: Award },
+interface StepMeta {
+  id: Stage;
+  number: string;
+  label: string;
+  code: string;
+}
+
+const STEPS: StepMeta[] = [
+  { id: 'intake', number: '01', label: 'Evidence Intake', code: 'Intake' },
+  { id: 'profile', number: '02', label: 'Fact Base', code: 'Facts' },
+  { id: 'review', number: '03', label: '4-Desk Audit', code: 'Audit' },
+  { id: 'debate', number: '04', label: 'Panel Debate', code: 'Debate' },
+  { id: 'verdict', number: '05', label: 'Decision Brief', code: 'Verdict' },
 ];
 
 export function Stepper({ currentStage }: { currentStage: Stage }) {
@@ -29,57 +36,72 @@ export function Stepper({ currentStage }: { currentStage: Stage }) {
   };
 
   return (
-    <nav aria-label="Pipeline Stage Progress" className="py-1 px-1">
-      <div className="max-w-4xl mx-auto flex items-center justify-between gap-1 sm:gap-2">
+    <nav aria-label="Evaluation Docket Progression" className="w-full flex justify-center">
+      {/* Precision Segmented Control Track */}
+      <div className="inline-flex items-center gap-1 sm:gap-1.5 p-1.5 rounded-xl bg-surface-2/80 border border-border backdrop-blur-md shadow-2xs">
         {STEPS.map((step, i) => {
           const isComplete = i < currentIndex;
           const isCurrent = i === currentIndex;
           const isClickable = canNavigateTo(step.id, i);
-          const Icon = step.icon;
 
           return (
-            <div key={step.id} className="flex items-center flex-1 last:flex-none">
+            <div key={step.id} className="flex items-center">
               <button
+                type="button"
                 onClick={() => isClickable && setStage(step.id)}
                 disabled={!isClickable}
-                title={isClickable ? `Jump to ${step.label}` : `${step.label} pending completion`}
-                className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full transition-all duration-200 focus-visible:outline-none ${
+                className={`relative z-10 flex items-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-2 rounded-lg text-left transition-colors duration-200 focus-visible:outline-none select-none cursor-pointer ${
                   isCurrent
-                    ? 'bg-surface border border-accent-technical/40 shadow-sm text-text font-bold'
+                    ? 'text-text font-bold'
                     : isComplete
-                    ? 'bg-surface-2/70 text-text/80 hover:bg-surface-2 cursor-pointer font-medium'
-                    : 'text-muted opacity-50 cursor-not-allowed font-normal'
+                    ? 'text-text/80 hover:text-text hover:bg-surface/50'
+                    : 'text-muted/50 cursor-not-allowed'
                 }`}
+                title={`${step.number} // ${step.label}`}
               >
+                {/* Sliding active pill background with Framer Motion layoutId */}
+                {isCurrent && (
+                  <motion.div
+                    layoutId="activeStepCapsule"
+                    className="absolute inset-0 rounded-lg bg-surface border border-border shadow-xs z-[-1]"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+
+                {/* Step indicator badge */}
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
+                  className={`w-6 h-6 rounded-md flex items-center justify-center font-mono text-xs font-bold transition-all ${
                     isCurrent
-                      ? 'bg-accent-technical text-white shadow-xs'
+                      ? 'bg-text text-bg shadow-2xs'
                       : isComplete
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-surface-3 text-muted'
+                      ? 'bg-emerald-600/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                      : 'bg-surface/60 text-muted/70 border border-border/60'
                   }`}
                 >
-                  {isComplete ? <Check size={13} strokeWidth={2.5} /> : <Icon size={13} />}
+                  {isComplete ? <Check size={13} strokeWidth={2.8} /> : step.number}
                 </div>
 
-                <span className="text-xs sm:text-[13px] hidden sm:inline whitespace-nowrap">
-                  {step.label}
-                </span>
-
-                {isCurrent && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent-technical animate-ping hidden md:inline-block" />
-                )}
+                {/* Step label text */}
+                <div className="flex flex-col leading-none">
+                  <span
+                    className={`text-xs sm:text-[13px] font-semibold tracking-tight transition-colors ${
+                      isCurrent
+                        ? 'text-text font-bold'
+                        : isComplete
+                        ? 'text-text/80 font-medium'
+                        : 'text-muted/65'
+                    }`}
+                  >
+                    <span className="hidden xl:inline">{step.label}</span>
+                    <span className="inline xl:hidden">{step.code}</span>
+                  </span>
+                </div>
               </button>
 
+              {/* Minimal Divider between steps */}
               {i < STEPS.length - 1 && (
-                <div className="flex-1 mx-1 sm:mx-2 h-0.5 bg-border relative hidden sm:block">
-                  <motion.div
-                    initial={false}
-                    animate={{ width: isComplete ? '100%' : '0%' }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute top-0 left-0 h-full bg-accent-technical"
-                  />
+                <div className="text-muted/30 px-0.5 hidden sm:flex items-center">
+                  <ChevronRight size={14} strokeWidth={2} />
                 </div>
               )}
             </div>
@@ -89,4 +111,3 @@ export function Stepper({ currentStage }: { currentStage: Stage }) {
     </nav>
   );
 }
-
